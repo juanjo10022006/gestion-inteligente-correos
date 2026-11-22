@@ -71,6 +71,8 @@ COLLECTION_VALIDATORS = {
                 "createdAt": {"bsonType": "date"},
                 "createdBy": {"bsonType": "string", "minLength": 1, "maxLength": 64},
                 "resolution": {"bsonType": ["string", "null"]},
+                "revision": {"bsonType": ["int", "long"], "minimum": 0},
+                "pendingAudit": {"bsonType": "array", "items": {"bsonType": "object"}},
                 "prediction": {
                     "bsonType": ["object", "null"],
                     "properties": {
@@ -109,6 +111,8 @@ COLLECTION_VALIDATORS = {
                 "actorUserId": {"bsonType": ["string", "null"]},
                 "action": {"bsonType": "string", "minLength": 1, "maxLength": 128},
                 "reason": {"bsonType": ["string", "null"]},
+                "before": {"bsonType": ["object", "null"]},
+                "after": {"bsonType": ["object", "null"]},
                 "createdAt": {"bsonType": "date"},
             },
         }
@@ -133,6 +137,10 @@ INDEXES = {
         ([("expiresAt", ASCENDING)], "expiresAt_1", {"expireAfterSeconds": 0}),
     ],
     "messages": [
+        (
+            [("pendingAudit.0", ASCENDING)], "messages_pending_audit",
+            {"partialFilterExpression": {"pendingAudit.0": {"$exists": True}}},
+        ),
         ([("createdAt", DESCENDING), ("_id", DESCENDING)], "messages_created_desc", {}),
         (
             [("status", ASCENDING), ("createdAt", DESCENDING), ("_id", DESCENDING)],

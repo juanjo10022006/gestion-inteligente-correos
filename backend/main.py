@@ -9,15 +9,18 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pymongo import DESCENDING, ReturnDocument
+from pymongo import DESCENDING
 from pymongo.errors import PyMongoError
 
+from ai_service.contract import Category
+from backend.audit import event_pipeline, make_event, publish_pending, snapshot, update_with_events
 from backend.auth import UserIdentity, administrator, current_user, router as auth_router
 from backend.classifier import classify
 from backend.db import connect, get_database, initialize_database
+from backend.filters import date_range
 from backend.schemas import (
     AuditPage, ManualClassification, MessageCreated, MessageDetail, MessageInput, MessagePage, MessageSummary,
-    StatusChange,
+    MessageStatus, StatusChange,
 )
 
 ROUTING_THRESHOLD = 0.70
@@ -33,6 +36,7 @@ async def lifespan(app: FastAPI):
     with connect() as client:
         app.state.db = get_database(client)
         initialize_database(app.state.db)
+        publish_pending(app.state.db)
         yield
 
 
@@ -62,15 +66,14 @@ def register_message(message: MessageInput, request: Request, user: Annotated[Us
         status="RECIBIDO",
         createdAt=now,
         createdBy=user.id,
-        creationEvent={
-            "action": "MENSAJE_REGISTRADO",
-            "messageId": str(message_id),
-            "actorUserId": user.id,
-            "createdAt": now,
-        },
+        revision=0,
     )
+    document["pendingAudit"] = [
+        make_event(message_id, "MENSAJE_REGISTRADO", user.id, None, snapshot(document)),
+    ]
     messages = request.app.state.db.messages
     messages.insert_one(document)
+    publish_pending(request.app.state.db, message_id)
 
     prediction = classify(message.subject, message.body)
     department = None
@@ -84,17 +87,29 @@ def register_message(message: MessageInput, request: Request, user: Annotated[Us
         status = "CLASIFICADO"
         department = prediction.category
         action = "MENSAJE_CLASIFICADO"
-    messages.update_one({"_id": message_id}, {"$set": {
+    updates = {
         "status": status,
         "prediction": prediction.model_dump() if prediction else None,
         "department": department,
-        "classificationEvent": {
-            "action": action,
-            "messageId": str(message_id),
-            "actorUserId": "SISTEMA",
-            "createdAt": datetime.now(timezone.utc),
-        },
-    }})
+        "assignmentOrigin": "IA" if department else None,
+        "assignment": {
+            "department": department, "source": "IA", "reason": None,
+            "timestamp": datetime.now(timezone.utc),
+        } if department else None,
+    }
+    after = snapshot({**document, **updates})
+    events = []
+    if prediction:
+        events.append(make_event(
+            message_id, "PREDICCION_REGISTRADA", None, snapshot(document),
+            {**snapshot(document), "prediction": prediction.model_dump()},
+        ))
+    events.append(make_event(
+        message_id, action, None,
+        {**snapshot(document), "prediction": prediction.model_dump()} if prediction else snapshot(document),
+        after,
+    ))
+    update_with_events(request.app.state.db, document, updates, events)
     return MessageCreated(id=str(message_id), status=status, prediction=prediction, department=department)
 
 
@@ -105,9 +120,20 @@ def list_messages(
     page: int = Query(default=1, ge=1, le=1_000_000),
     page_size: int = Query(default=20, alias="pageSize", ge=1, le=100),
     text: str | None = Query(default=None, min_length=1, max_length=160),
+    status: MessageStatus | None = None,
+    department: Category | None = None,
+    date_from: datetime | None = Query(default=None, alias="dateFrom"),
+    date_to: datetime | None = Query(default=None, alias="dateTo"),
 ):
     collection = request.app.state.db.messages
     filters = {}
+    if status is not None:
+        filters["status"] = status
+    if department is not None:
+        filters["department"] = department
+    dates = date_range(date_from, date_to)
+    if dates:
+        filters["createdAt"] = dates
     if text:
         pattern = re.compile(re.escape(text), re.IGNORECASE)
         filters["$or"] = [{field: pattern} for field in ("subject", "body")]
@@ -149,28 +175,32 @@ def assign_department(
     request: Request,
     user: Annotated[UserIdentity, Depends(current_user)],
 ):
-    messages = request.app.state.db.messages
+    db = request.app.state.db
+    publish_pending(db, message_id)
+    messages = db.messages
     query = {"_id": ObjectId(message_id)}
-    document = messages.find_one_and_update(
-        {**query, "status": {"$in": ["PENDIENTE_REVISION", "PENDIENTE_CLASIFICACION", "CLASIFICADO"]}},
-        {"$set": {
-            "status": "EN_GESTION",
-            "department": assignment.department,
-            "assignmentOrigin": "MANUAL",
-            "manualEvent": {
-                "action": "CLASIFICACION_MANUAL",
-                "messageId": message_id,
-                "actorUserId": user.id,
-                "createdAt": datetime.now(timezone.utc),
-                "reason": assignment.reason,
-            },
-        }},
-        return_document=ReturnDocument.AFTER,
-    )
-    if document is None:
-        if messages.find_one(query, {"_id": 1}) is None:
-            raise HTTPException(404, "Mensaje no encontrado.")
+    before = messages.find_one(query)
+    if before is None:
+        raise HTTPException(404, "Mensaje no encontrado.")
+    if before["status"] not in {"PENDIENTE_REVISION", "PENDIENTE_CLASIFICACION", "CLASIFICADO", "EN_GESTION"}:
         raise HTTPException(409, "El estado actual no admite una asignación manual.")
+    updates = {
+        "status": "EN_GESTION",
+        "department": assignment.department,
+        "assignmentOrigin": "MANUAL",
+        "assignment": {
+            "department": assignment.department,
+            "source": "MANUAL",
+            "timestamp": datetime.now(timezone.utc),
+            "reason": assignment.reason,
+        },
+    }
+    document = update_with_events(
+        db, before, updates, [make_event(
+            message_id, "CLASIFICACION_MANUAL", user.id,
+            snapshot(before), snapshot({**before, **updates}), assignment.reason,
+        )],
+    )
     return MessageDetail(id=message_id, **document)
 
 
@@ -181,34 +211,30 @@ def change_status(
     request: Request,
     user: Annotated[UserIdentity, Depends(current_user)],
 ):
-    previous, action, event_field = {
-        "EN_GESTION": ("CLASIFICADO", "GESTION_INICIADA", "managementEvent"),
-        "CERRADO": ("EN_GESTION", "MENSAJE_CERRADO", "closureEvent"),
+    previous, action = {
+        "EN_GESTION": ("CLASIFICADO", "GESTION_INICIADA"),
+        "CERRADO": ("EN_GESTION", "MENSAJE_CERRADO"),
     }[change.status]
     updates = {
         "status": change.status,
-        event_field: {
-            "action": action,
-            "messageId": message_id,
-            "actorUserId": user.id,
-            "createdAt": datetime.now(timezone.utc),
-            "reason": change.reason,
-        },
     }
     if change.status == "CERRADO":
         updates["resolution"] = change.reason
 
-    messages = request.app.state.db.messages
+    db = request.app.state.db
+    publish_pending(db, message_id)
+    messages = db.messages
     query = {"_id": ObjectId(message_id)}
-    document = messages.find_one_and_update(
-        {**query, "status": previous},
-        {"$set": updates},
-        return_document=ReturnDocument.AFTER,
-    )
-    if document is None:
-        if messages.find_one(query, {"_id": 1}) is None:
-            raise HTTPException(404, "Mensaje no encontrado.")
+    before = messages.find_one(query)
+    if before is None:
+        raise HTTPException(404, "Mensaje no encontrado.")
+    if before["status"] != previous:
         raise HTTPException(409, "El estado actual no admite esta transición.")
+    document = update_with_events(
+        db, before, updates, [make_event(
+            message_id, action, user.id, snapshot(before), snapshot({**before, **updates}), change.reason,
+        )],
+    )
     return MessageDetail(id=message_id, **document)
 
 
@@ -218,22 +244,20 @@ def list_audit_events(
     user: Annotated[UserIdentity, Depends(administrator)],
     message_id: Annotated[str | None, Query(alias="messageId", pattern=r"^[a-f0-9]{24}$")] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    actor: str | None = Query(default=None, min_length=1, max_length=64),
+    action: str | None = Query(default=None, min_length=1, max_length=128),
+    date_from: datetime | None = Query(default=None, alias="dateFrom"),
+    date_to: datetime | None = Query(default=None, alias="dateTo"),
 ):
-    filters = {"creationEvent": {"$exists": True}}
+    filters = {}
     if message_id is not None:
-        filters["_id"] = ObjectId(message_id)
-    events = request.app.state.db.messages.aggregate([
-        {"$match": filters},
-        {"$project": {"events": [
-            "$creationEvent",
-            {"$ifNull": ["$classificationEvent", None]},
-            {"$ifNull": ["$manualEvent", None]},
-            {"$ifNull": ["$managementEvent", None]},
-            {"$ifNull": ["$closureEvent", None]},
-        ]}},
-        {"$unwind": "$events"},
-        {"$match": {"events": {"$ne": None}}},
-        {"$sort": {"events.createdAt": -1, "_id": -1, "events.action": 1}},
-        {"$limit": limit},
-    ])
-    return AuditPage(items=[document["events"] for document in events])
+        filters["messageId"] = message_id
+    if actor is not None:
+        filters["actorUserId"] = actor
+    if action is not None:
+        filters["action"] = action
+    dates = date_range(date_from, date_to)
+    if dates:
+        filters["createdAt"] = dates
+    publish_pending(request.app.state.db, message_id)
+    return AuditPage(items=list(request.app.state.db.audit_events.aggregate(event_pipeline(filters, limit))))

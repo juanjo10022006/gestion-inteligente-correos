@@ -1,10 +1,14 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, StringConstraints, model_validator
 
 from ai_service.contract import Category, Prediction
 
+MessageStatus = Literal[
+    "RECIBIDO", "PENDIENTE_CLASIFICACION", "PENDIENTE_REVISION",
+    "CLASIFICADO", "EN_GESTION", "CERRADO",
+]
 
 class MessageInput(BaseModel):
     subject: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=160)]
@@ -21,7 +25,7 @@ class MessageCreated(BaseModel):
 
 class MessageSummary(MessageCreated):
     subject: str
-    sender: str | None
+    sender: str | None = None
     createdAt: datetime
 
 
@@ -44,6 +48,8 @@ class StatusChange(BaseModel):
 class MessageDetail(MessageSummary):
     body: str
     resolution: str | None = None
+    assignmentOrigin: Literal["IA", "MANUAL"] | None = None
+    assignment: dict[str, Any] | None = None
 
 
 class MessagePage(BaseModel):
@@ -54,11 +60,16 @@ class MessagePage(BaseModel):
 
 
 class AuditEvent(BaseModel):
+    id: str
     action: str
     messageId: str
     actorUserId: str
+    actorType: Literal["SISTEMA", "USUARIO"]
     createdAt: datetime
     reason: str | None = None
+    before: dict[str, Any] | None = None
+    after: dict[str, Any] | None = None
+    source: Literal["HISTORICAL", "LEGACY"]
 
 
 class AuditPage(BaseModel):

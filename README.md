@@ -28,7 +28,7 @@ Al iniciar, la API configura de forma idempotente las colecciones, validadores e
 docker compose exec api python -m backend.scripts.init_db
 ```
 
-La inicialización prepara `audit_events` para una integración posterior, pero no migra los eventos embebidos actuales.
+Las operaciones nuevas escriben su historial en `audit_events`. La consulta combina estos eventos con los embebidos anteriores, sin migrarlos ni eliminarlos.
 
 Para apagar la demo conservando los datos, ejecuta `docker compose stop`. Para volver a levantarla, ejecuta `docker compose up -d --wait`.
 
@@ -42,7 +42,7 @@ npm ci
 npm run dev
 ```
 
-Abre [Gestión de correos](http://127.0.0.1:5173/) e inicia sesión con tu cuenta del proyecto. Puedes registrar un correo, consultar su predicción y guardar una asignación con motivo desde el detalle. Con una cuenta de administrador, abre **Auditoría** para consultar los últimos 50 eventos. También puedes abrir **Ver auditoría del correo** desde su detalle para filtrar por ese mensaje. Vite redirige las solicitudes al puerto 8000 de la API.
+Abre [Gestión de correos](http://127.0.0.1:5173/) e inicia sesión con tu cuenta del proyecto. Puedes registrar un correo, consultar su predicción y guardar asignaciones sucesivas con motivo, incluso durante la gestión. La bandeja permite combinar texto, estado, departamento y fechas. Con una cuenta de administrador, abre **Auditoría** para consultar hasta 100 eventos coincidentes, filtrables por mensaje, actor, acción y fechas, con sus valores antes/después. Los eventos legados se identifican sin inventar información histórica. Vite redirige las solicitudes al puerto 8000 de la API.
 
 ## Ejecutar el primer flujo en local
 
@@ -80,7 +80,17 @@ El ejemplo activa un umbral provisional de 0,45 para la demo con el modelo entre
 
 Para revisar el resultado, usa `GET /api/v1/messages/{message_id}`. Para asignar o corregir el departamento, envía `{"department":"FACTURACION","reason":"El asunto corresponde a un cobro."}` a `PATCH /api/v1/messages/{message_id}/classification`. La asignación mueve el correo a `EN_GESTION` y conserva la predicción original. Un correo clasificado automáticamente puede pasar a ese estado desde **Iniciar gestión**. Después escribe la resolución y pulsa **Cerrar correo**. En Swagger, ambos cambios se hacen con `PATCH /api/v1/messages/{message_id}/status`; el cierre recibe `{"status":"CERRADO","reason":"Se envió la factura solicitada."}`.
 
-Un asunto de dos caracteres devuelve 422. La bandeja admite `page`, `pageSize` y búsqueda con `text`.
+Un asunto de dos caracteres devuelve 422. La bandeja admite `page`, `pageSize`, `text`, `status`, `department`, `dateFrom` y `dateTo`. Auditoría admite `messageId`, `actor`, `action`, `dateFrom`, `dateTo` y `limit` (1–100). Las fechas de API requieren ISO 8601 con zona horaria; los extremos son inclusivos y un rango invertido devuelve 422. La interfaz convierte la hora local a UTC.
+
+### Pruebas aisladas del bloque histórico
+
+Con Docker disponible y la imagen IA local `gestion-inteligente-correos-ai` ya construida:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/run_history_checks.ps1
+```
+
+El script construye la API actual y ejecuta inicialización, aceptación del MVP e historia/filtros en una red privada temporal. MongoDB usa `tmpfs`, sin montar el volumen de demostración ni publicar puertos. Retira únicamente sus propios contenedores, red e imagen de prueba.
 
 Sin sesión, la bandeja y el registro devuelven 401. Para ver la auditoría de creación y de clasificación, inicia sesión como administrador, sustituye el token en **Authorize** y consulta `GET /api/v1/audit-events` con el `messageId` del correo. Un operador recibe 403 en esa ruta. Los mensajes creados antes de implementar la auditoría siguen en la bandeja y carecen de evento de creación.
 

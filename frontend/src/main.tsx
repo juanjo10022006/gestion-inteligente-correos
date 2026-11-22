@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApiError, departments, request } from './api';
+import { ApiError, departments, formFilters, request } from './api';
 import type { Department, Detail, Message, MessagePage, Session } from './api';
 import { AuditView } from './AuditView';
 import './styles.css';
@@ -16,7 +16,7 @@ const states: Record<string, string> = {
 };
 const dateFormat = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 const percentFormat = new Intl.NumberFormat('es-CO', { style: 'percent', maximumFractionDigits: 1 });
-const eligible = new Set(['PENDIENTE_REVISION', 'PENDIENTE_CLASIFICACION', 'CLASIFICADO']);
+const eligible = new Set(['PENDIENTE_REVISION', 'PENDIENTE_CLASIFICACION', 'CLASIFICADO', 'EN_GESTION']);
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
 
 function Brand() {
@@ -191,6 +191,8 @@ function MessageDetail({ message, save, saveStatus, showAudit }: {
       <h3>Clasificación</h3>
       <dl>
         <div><dt>Área asignada</dt><dd>{message.department ? departments[message.department] : 'Sin asignar'}</dd></div>
+        {message.assignmentOrigin && <div><dt>Origen de asignación</dt>
+          <dd>{message.assignmentOrigin === 'MANUAL' ? 'Manual' : 'IA'}</dd></div>}
         {prediction && <>
           <div><dt>Sugerencia de IA</dt><dd>{departments[prediction.category]}</dd></div>
           <div><dt>Confianza</dt><dd>{percentFormat.format(prediction.confidence)}</dd></div>
@@ -203,7 +205,7 @@ function MessageDetail({ message, save, saveStatus, showAudit }: {
       <StatusForm key={message.id + message.status} closing={message.status === 'EN_GESTION'} save={saveStatus} />}
     {message.resolution && <section className="prediction"><h3>Resolución</h3>
       <p className="message-body">{message.resolution}</p></section>}
-    {eligible.has(message.status) && <ReviewForm key={message.id} message={message} save={save} />}
+    {eligible.has(message.status) && <ReviewForm key={message.id + message.department} message={message} save={save} />}
     {showAudit && <div className="actions"><button onClick={showAudit}>Ver auditoría del correo</button></div>}
   </section>;
 }
@@ -225,8 +227,9 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: (notice?
 
   useEffect(() => {
     let active = true;
-    const filters = new URLSearchParams({ page: String(page), pageSize: '10' });
-    if (search) filters.set('text', search);
+    const filters = new URLSearchParams(search);
+    filters.set('page', String(page));
+    filters.set('pageSize', '10');
     setList(undefined);
     setListError('');
     request<MessagePage>('/messages?' + filters, token).then((data) => {
@@ -287,13 +290,22 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: (notice?
       {feedback && <p className="confirmation" role="status">{feedback}</p>}
       <div className="workspace-grid">
         <section className="inbox" aria-label="Correos">
-          <form className="search" role="search" onSubmit={(event) => {
+          <form className="stack inbox-filters" role="search" onSubmit={(event) => {
             event.preventDefault();
-            setSearch(String(new FormData(event.currentTarget).get('search')).trim());
+            setSearch(formFilters(event.currentTarget));
             setPage(1);
           }}>
-            <input name="search" type="search" aria-label="Buscar por asunto o contenido" placeholder="Buscar correos" maxLength={160} />
-            <button>Buscar</button>
+            <label>Texto<input name="text" type="search" placeholder="Asunto o contenido" maxLength={160} /></label>
+            <label>Estado<select name="status"><option value="">Todos</option>
+              {Object.entries(states).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select></label>
+            <label>Departamento<select name="department"><option value="">Todos</option>
+              {Object.entries(departments).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select></label>
+            <label>Desde (hora local)<input type="datetime-local" name="dateFrom" /></label>
+            <label>Hasta (hora local)<input type="datetime-local" name="dateTo" /></label>
+            <div className="actions"><button>Filtrar</button>
+              <button type="reset" onClick={() => { setSearch(''); setPage(1); }}>Limpiar</button></div>
           </form>
           {listError ? <div className="empty"><Notice>{listError}</Notice><button onClick={() => refresh(revision + 1)}>Reintentar</button></div>
             : !list ? <p className="empty muted" role="status">Cargando correos…</p>

@@ -20,8 +20,27 @@ export type Message = {
 };
 
 export type Summary = Message & { subject: string; sender: string | null; createdAt: string };
-export type Detail = Summary & { body: string; resolution: string | null };
+export type Detail = Summary & {
+  body: string;
+  resolution: string | null;
+  assignmentOrigin: 'IA' | 'MANUAL' | null;
+};
 export type MessagePage = { items: Summary[]; page: number; pageSize: number; total: number };
+
+export function formFilters(form: HTMLFormElement): string {
+  const result = new URLSearchParams();
+  new FormData(form).forEach((raw, key) => {
+    const value = String(raw).trim();
+    if (value) result.set(key, key === 'dateFrom' || key === 'dateTo' ? new Date(value).toISOString() : value);
+  });
+  return result.toString();
+}
+
+export function localDateInput(value: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {

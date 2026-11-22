@@ -1,5 +1,5 @@
 # Modelo conceptual de datos — MongoDB
-**Estado:** modelo conceptual con inicialización física compatible en `backend/scripts/init_db.py`; la integración de auditoría externa sigue pendiente.
+**Estado:** modelo conceptual con inicialización física compatible y auditoría de mensajes integrada; los datos legados se conservan sin migración.
 
 | Candidato | Atributos principales | Relación e integridad |
 |---|---|---|
@@ -18,6 +18,9 @@
 - `users` usa `_id` como identificador único actual; no se duplica con un índice `username`. La validación permite los hashes de activación y timestamps futuros sin exigirlos a las cuentas ya creadas.
 - `sessions` conserva el índice TTL `expiresAt_1`.
 - `messages` mantiene los nombres físicos actuales (`status`, `department`, `createdAt`) y añade índices para la bandeja general y futuros filtros por estado o departamento ordenados por fecha.
-- `audit_events` queda creada y validada para eventos futuros con `createdAt` como timestamp físico. Sus índices soportan consulta global y filtros por mensaje, actor y acción. El script no copia ni elimina los eventos embebidos existentes.
+- `audit_events` recibe creación, predicción/enrutamiento, correcciones, gestión y cierre con `createdAt` como timestamp físico, `messageId` textual, actor, motivo y snapshots antes/después del estado operativo (sin contenido del correo). La consulta une eventos nuevos y embebidos legados; los legados tienen identidad estable y `before/after=null`, sin reconstrucción ficticia.
 - `model_metadata` representa `Metadato de modelo` y exige `modelVersion` único, sin afirmar ni insertar métricas.
 - Las validaciones usan nivel `moderate`, acción `error` y campos adicionales permitidos. La inicialización no reescribe documentos y puede ejecutarse repetidamente.
+- En MongoDB standalone, la actualización del mensaje y su intención de auditoría se guardan atómicamente en `pendingAudit`. La publicación usa `insert_one` con `_id` estable y confirmación posterior: un reintento no modifica ni duplica el evento. Los pendientes se recuperan al arrancar, antes de otra mutación del mensaje o al consultar auditoría; un error de publicación responde 503, pero la intención queda persistida. `revision` permite detectar cambios concurrentes y devolver 409 sin sobrescribir un `before` obsoleto. No se garantiza atomicidad entre dos colecciones mediante transacciones ni se requiere un replica set.
+- `pendingAudit` es una cola transitoria, no el historial: antes de acumular nuevas mutaciones se intenta vaciarla; un fallo impide continuar agregando cambios. Se indexan únicamente los mensajes con entregas pendientes.
+- La API no ofrece edición/eliminación de eventos y su código solo inserta en `audit_events`. La protección contra modificaciones por administradores directos de MongoDB requiere permisos de base de datos, pendiente del bloque de seguridad; un validador JSON Schema por sí solo no garantiza inmutabilidad.

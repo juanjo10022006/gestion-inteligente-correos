@@ -124,12 +124,15 @@ def run_cases(db, operator_login, admin_login):
     call(f"{MESSAGES}/000000000000000000000000", 404, token=operator)
     assigned = assign(review["id"], operator)
     assert assigned["status"] == "EN_GESTION" and assigned["prediction"] == review["prediction"]
-    call(f"{MESSAGES}/{review['id']}/classification", 409, token=operator, method="PATCH",
-         body={"department": "FACTURACION", "reason": "Intento de reasignación ficticia."})
-    assert call(f"{MESSAGES}/{review['id']}", 200, token=operator) == assigned
+    reassigned = call(f"{MESSAGES}/{review['id']}/classification", 200, token=operator, method="PATCH",
+                      body={"department": "VENTAS", "reason": "Reasignación ficticia durante gestión."})
+    assert reassigned["prediction"] == review["prediction"] and reassigned["department"] == "VENTAS"
     events = call(f"{AUDIT}?messageId={review['id']}", 200, token=administrator)["items"]
     by_action = {event["action"]: event for event in events}
-    assert set(by_action) == {"MENSAJE_REGISTRADO", "CLASIFICACION_EN_REVISION", "CLASIFICACION_MANUAL"}
+    assert set(by_action) == {
+        "MENSAJE_REGISTRADO", "PREDICCION_REGISTRADA", "CLASIFICACION_EN_REVISION", "CLASIFICACION_MANUAL",
+    }
+    assert len([event for event in events if event["action"] == "CLASIFICACION_MANUAL"]) == 2
     assert by_action["MENSAJE_REGISTRADO"]["actorUserId"] == operator_login["username"]
     assert by_action["CLASIFICACION_EN_REVISION"]["actorUserId"] == "SISTEMA"
     assert by_action["CLASIFICACION_MANUAL"]["reason"] == "Asignación ficticia para la prueba."

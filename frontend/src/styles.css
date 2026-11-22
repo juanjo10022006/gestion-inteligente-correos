@@ -118,3 +118,5 @@ textarea { resize: vertical; }
   .topbar:has(.admin-nav) { flex-wrap: wrap; }
   .admin-nav { order: 3; width: 100%; }
 }
+.inbox-filters { padding: 1rem; }
+.audit-table pre { max-width: 28rem; white-space: pre-wrap; overflow-wrap: anywhere; }
