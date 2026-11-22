@@ -12,5 +12,6 @@
 | 7 | [07 ADR](07_decisiones_tecnicas.md) / [08 datos](08_modelo_datos_preliminar.md) | decisiones y modelo conceptual |
 | 8 | [Catálogo de diagramas](diagramas/README.md) / [prototipos UI](05_prototipos.md) | fuentes editables D-01–D-09 y UI-01–UI-06 |
 | 9 | [Revisión pre-diagramas](INFORME_REVISION_PRE_DIAGRAMAS.md) / [revisión de diagramas](INFORME_REVISION_DIAGRAMAS.md) | informes separados de 1B2 y corrección posterior |
+| 10 | [Evaluación final de IA](09_evaluacion_final_ia.md) | prueba reservada, modelo base, matriz de confusión, enrutamiento y latencia de inferencia |
 
-Estado: línea base documental de 1B, 1B2 y 1C revisada; existen fuentes editables de diagramas y prototipos, no software implementado. Colecciones físicas MongoDB, entrenamiento y despliegue no se han realizado.
+Estado: línea base documental revisada en 1D. La implementación local cubre sesión, registro, bandeja, inferencia, asignación manual y auditoría administrativa desde React. El [README del proyecto](../README.md) contiene los pasos para ejecutar la demo con los cuatro servicios de Docker Compose.

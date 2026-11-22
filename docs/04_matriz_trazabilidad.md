@@ -1,12 +1,12 @@
 # Matriz de trazabilidad
 
-**Estado:** especificación de trazabilidad; componentes, endpoints, pantallas y pruebas son previstos, no implementados ni ejecutados.
+**Estado:** matriz de requisitos y contratos con resultados de las pruebas ejecutadas en Docker. Las partes pendientes se indican en la tabla de resultados.
 
 ## Leyenda
 
-- **UI-01** inicio de sesión; **UI-02** bandeja; **UI-03** registro; **UI-04** detalle y clasificación; **UI-05** gestión/corrección; **UI-06** auditoría/administración. Los SVG editables se encuentran en `docs/prototipos/`; siguen siendo prototipos, no frontend implementado.
+- **UI-01** inicio de sesión; **UI-02** bandeja; **UI-03** registro; **UI-04** detalle y clasificación; **UI-05** gestión/corrección; **UI-06** auditoría/administración. Los SVG editables en `docs/prototipos/` son la referencia de diseño del frontend React.
 - Componentes propuestos: `Auth`, `Usuarios`, `Mensajes`, `Clasificacion`, `Enrutamiento`, `Auditoria`.
-- CP = caso de prueba futuro. Los endpoints corresponden a contratos de `02_srs.md`.
+- CP = caso de prueba. Los endpoints corresponden a contratos de `02_srs.md`.
 
 | Objetivo | Requisito / regla | Épica / HU | UI | Componente técnico propuesto | Endpoint/contrato | Caso de prueba previsto |
 |---|---|---|---|---|---|---|
@@ -26,20 +26,37 @@
 | OBJ-08 | RNF-05, RNF-11 | EPI-005 / HU-14 | — | Clasificacion | contrato IA/documentación | CP-09 |
 | OBJ-01 | RNF-03, RNF-12 | EPI-005 / HU-14 | UI-02–UI-05 | API, Clasificacion | todos los anteriores | CP-01–CP-10 |
 
-## Casos de prueba previstos
+## Casos de prueba y resultados
 
-| ID | Tipo | Escenario y resultado esperado |
+| ID | Resultado | Evidencia y alcance |
 |---|---|---|
-| CP-01 | API/aceptación | Registrar un mensaje válido devuelve 201, id y evento de creación; el mensaje se persiste en `RECIBIDO` antes del intento de IA. |
-| CP-02 | API negativa | Registro con asunto/cuerpo inválido devuelve 422 y no persiste mensaje. |
-| CP-03 | Integración/contrato IA | Una respuesta IA válida contiene categoría permitida, confianza [0,1] y versión; se conservan junto al mensaje. |
-| CP-04 | Regla de negocio | Confianza <0,70 deja `PENDIENTE_REVISION`; confianza ≥0,70 asigna departamento. |
-| CP-05 | API/aceptación | Bandeja filtra y pagina; detalle existente muestra campos previstos y uno inexistente devuelve 404. |
-| CP-06 | API/reglas | Cambio válido, corrección con motivo y asignación manual con predicción ausente generan eventos; transición inválida devuelve 409 sin cambio. |
-| CP-07 | Integración/seguridad | Auditoría lista creación, clasificación y corrección; solo administrador puede acceder a la global. |
-| CP-08 | Seguridad | Sin sesión devuelve 401; rol insuficiente devuelve 403; administrador crea solo roles permitidos, la credencial temporal se muestra una vez y se activa sin persistir secretos en auditoría. |
-| CP-09 | IA/reproducibilidad | Pipeline ejecutado posteriormente conserva particiones, baseline, modelo, versión y métricas (Macro-F1 y precisión de enrutamiento) sin fuga de test. |
-| CP-10 | Resiliencia | IA no disponible o respuesta inválida no pierde el mensaje ni asigna categoría inventada; queda pendiente de clasificación y el operador puede asignar un departamento manual con motivo. |
+| CP-01 | Parcial en suite | Registro válido 201, ID y evento con actor. El orden persistencia → IA se verificó anteriormente durante la integración; la suite actual no inspecciona el estado intermedio. |
+| CP-02 | Pasó | Asunto inválido devuelve 422 y la colección permanece vacía. |
+| CP-03 | Pasó | La predicción real contiene categoría, confianza y versión, y se recupera en el detalle. |
+| CP-04 | Pasó | Con el umbral de demo 0,45, un correo de factura se enruta y otro ambiguo pasa a revisión. |
+| CP-05 | Parcial | Búsqueda por texto, paginación y detalle verificados; ID inexistente devuelve 404. Los filtros por departamento, estado y fecha siguen pendientes. |
+| CP-06 | Pasó | Asignación con motivo conserva la predicción. Un correo clasificado pasa a gestión y luego se cierra con una resolución auditable. Cerrar un correo pendiente o repetir el cierre devuelve 409. Una resolución ausente o en blanco devuelve 422. |
+| CP-07 | Parcial | El administrador obtiene los eventos de un correo con actor y motivo; el operador recibe 403. Falta probar la consulta por actor, acción y fechas, y validar la vista React con una sesión administrativa real. |
+| CP-08 | Parcial | Credenciales incorrectas y acceso sin sesión devuelven 401. El operador recibe 403 en auditoría. Creación desde la API y activación con credencial temporal siguen pendientes. |
+| CP-09 | Pasó | [Evaluación final independiente](09_evaluacion_final_ia.md) con versión, modelo base, Macro-F1 y precisión de enrutamiento. |
+| CP-10 | Parcial | Un servicio inalcanzable deja el correo persistido en `PENDIENTE_CLASIFICACION` y permite asignación manual. Falta convertir la respuesta malformada y el timeout en casos separados de la suite. |
+
+## Medición de rendimiento de la API
+
+| Operación | Solicitudes | Mediana | p95 | Objetivo p95 del SRS |
+|---|---:|---:|---:|---:|
+| Registrar y clasificar | 30 | 4,98 ms | 5,72 ms | ≤ 5 s |
+| Consultar bandeja | 30 | 2,90 ms | 3,45 ms | ≤ 2 s |
+
+Se midieron peticiones HTTP secuenciales desde el contenedor de la API, con sesión válida, MongoDB e IA reales. La medición de registro incluye validación, escritura, inferencia y enrutamiento. Excluye navegador, Nginx y carga concurrente. El resultado corresponde a esta demo y su base temporal.
+
+Para repetir la suite con Docker Compose levantado, desde la raíz en PowerShell:
+
+```powershell
+Get-Content tests/compose_acceptance.py -Raw -Encoding utf8 | docker compose exec -T api python -
+```
+
+La suite crea su propia base, arranca una API temporal y retira sus datos al terminar. La demo y sus cuentas permanecen disponibles durante la ejecución.
 
 ## Cobertura y criterios de consistencia
 
