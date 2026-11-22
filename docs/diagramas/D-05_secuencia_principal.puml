@@ -1,0 +1,29 @@
+@startuml
+title D-05 — Secuencia del flujo principal de registro y clasificación
+legend bottom
+RF-03 a RF-07; HU-03, HU-06 a HU-09.
+H-01 = 0,70 es una hipótesis pendiente de validación.
+El mensaje y su auditoría de creación existen antes de consultar IA.
+endlegend
+actor Operador
+participant API
+database MongoDB
+participant "Servicio IA" as IA
+Operador -> API: POST /api/v1/messages
+API -> API: validar asunto y cuerpo
+API -> MongoDB: persistir RECIBIDO
+API -> MongoDB: auditar creación
+API -> API: preprocesar y versionar texto
+API -> IA: {text, preprocessingVersion}
+alt respuesta válida y confianza >= H-01
+  IA --> API: categoría, confianza y modelVersion
+  API -> MongoDB: guardar predicción original,\nCLASIFICADO y evento
+else respuesta válida y confianza < H-01
+  IA --> API: categoría, confianza y modelVersion
+  API -> MongoDB: guardar predicción original,\nPENDIENTE_REVISION y evento
+else timeout, IA no disponible o respuesta inválida
+  IA --> API: error o respuesta inválida
+  API -> MongoDB: sin predicción ni confianza;\nPENDIENTE_CLASIFICACION y evento de fallo
+end
+API --> Operador: 201 {id, status, prediction?, department?}
+@enduml

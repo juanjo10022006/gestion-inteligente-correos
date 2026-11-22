@@ -1,0 +1,23 @@
+@startuml
+title D-03 — Componentes del backend
+legend bottom
+RF-01 a RF-12; HU-01 a HU-13.
+Flechas: dependencia interna propuesta; no crean endpoints públicos adicionales.
+endlegend
+package "API FastAPI" {
+  [Auth] --> [Usuarios] : valida cuenta y rol
+  [Auth] --> [Auditoría] : registra acceso/activación
+  [Usuarios] --> [Auditoría] : registra cambios
+  [Mensajes] --> [Clasificación] : solicita procesamiento
+  [Clasificación] --> [Enrutamiento] : entrega predicción o fallo
+  [Enrutamiento] --> [Auditoría] : registra decisión
+  [Mensajes] --> [Auditoría] : registra creación/estado
+  [Auth] --> [Repositorios]
+  [Usuarios] --> [Repositorios]
+  [Mensajes] --> [Repositorios]
+  [Enrutamiento] --> [Repositorios] : guarda resultado/estado
+  [Auditoría] --> [Repositorios] : agrega eventos
+}
+[Clasificación] --> [Servicio IA interno]
+[Repositorios] --> [MongoDB]
+@enduml

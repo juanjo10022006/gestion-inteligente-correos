@@ -1,0 +1,29 @@
+@startuml
+title D-04 — Casos de uso del MVP
+legend bottom
+RF-01, RF-02, RF-03, RF-08 a RF-12; HU-01 a HU-05, HU-10 a HU-13.
+Líneas: el rol autorizado puede iniciar el caso de uso.
+endlegend
+left to right direction
+actor OPERADOR
+actor ADMINISTRADOR
+ADMINISTRADOR --|> OPERADOR
+rectangle "Sistema inteligente de clasificación de correos" {
+  usecase "Autenticarse y\nactivar cuenta" as U1
+  usecase "Registrar mensaje" as U2
+  usecase "Consultar bandeja\ny detalle" as U3
+  usecase "Gestionar estado" as U4
+  usecase "Corregir o asignar\nmanualmente con motivo" as U5
+  usecase "Cerrar mensaje\n(RF-13 Should)" as U6
+  usecase "Gestionar cuentas" as U7
+  usecase "Consultar auditoría\nglobal" as U8
+}
+OPERADOR -- U1
+OPERADOR -- U2
+OPERADOR -- U3
+OPERADOR -- U4
+OPERADOR -- U5
+OPERADOR -- U6
+ADMINISTRADOR -- U7
+ADMINISTRADOR -- U8
+@enduml

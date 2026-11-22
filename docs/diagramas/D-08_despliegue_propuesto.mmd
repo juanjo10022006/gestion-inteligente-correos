@@ -1,0 +1,19 @@
+---
+title: D-08 — Despliegue propuesto con Docker Compose
+---
+flowchart TB
+  %% Leyenda: TLS termina en el contenedor web previsto; los demás enlaces permanecen en la red privada.
+  U[Navegador de Operador<br/>o Administrador] -->|HTTPS| FE
+  subgraph COMPOSE["Arquitectura prevista — Docker Compose"]
+    FE["Contenedor web<br/>SPA y terminación TLS prevista"]
+    subgraph RED["Red privada de aplicación"]
+      API[Contenedor API FastAPI]
+      IA[Contenedor IA]
+      DB[("MongoDB<br/>sin puerto público")]
+    end
+    FE -->|HTTP privado /api/v1/| API
+    API -->|Contrato interno versionado| IA
+    API -->|PyMongo| DB
+  end
+  ENV[Variables de entorno y secretos<br/>fuera de Git] -.configuran.-> FE
+  ENV -.configuran.-> API

@@ -1,0 +1,17 @@
+@startuml
+title D-06 — Máquina de estados del mensaje
+legend bottom
+RN-02 a RN-07; RF-03, RF-06, RF-07, RF-10, RF-11 y RF-13.
+H-01 = 0,70 es una hipótesis pendiente de validación.
+Las transiciones manuales requieren motivo cuando aplica.
+endlegend
+[*] --> RECIBIDO
+RECIBIDO --> CLASIFICADO : confianza >= H-01
+RECIBIDO --> PENDIENTE_REVISION : confianza < H-01
+RECIBIDO --> PENDIENTE_CLASIFICACION : IA falla
+PENDIENTE_REVISION --> EN_GESTION : asignación manual motivada
+PENDIENTE_CLASIFICACION --> EN_GESTION : asignación MANUAL motivada
+CLASIFICADO --> EN_GESTION : iniciar gestión o corrección motivada\n(conservar predicción IA original y auditar)
+EN_GESTION --> EN_GESTION : corrección motivada\n(conservar predicción IA original y auditar)
+EN_GESTION --> CERRADO : resolución (RF-13 Should)
+@enduml

@@ -221,3 +221,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+/AGENTS.md
+/LEEME_ANTES_DE_USAR.md
+
+/docs/PROMPT_*.md
+
+/referencias/
+
+.env
+.env.*
+!.env.example

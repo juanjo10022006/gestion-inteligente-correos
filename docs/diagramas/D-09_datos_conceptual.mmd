@@ -1,0 +1,58 @@
+---
+title: D-09 — Modelo conceptual MongoDB
+---
+classDiagram
+ %% Leyenda: composición = dato embebido; asociación = referencia; índices son candidatos.
+ class Usuario {
+  id
+  username [índice único]
+  role
+  active
+  passwordHash
+  activationCredentialHash
+ }
+ class Mensaje {
+  id
+  subject
+  body
+  estado [índice]
+  departamentoEfectivo [índice]
+  createdAt [índice]
+ }
+ class PrediccionOriginalIA {
+  category
+  confidence
+  modelVersion
+  preprocessingVersion
+  source = IA
+  timestamp
+ }
+ class AsignacionEfectiva {
+  department
+  source = IA o MANUAL
+  reason [obligatorio para manual]
+  timestamp
+ }
+ class EventoAuditoria {
+  id
+  messageId [índice compuesto]
+  actorType = SISTEMA o USUARIO
+  actorUserId [opcional, índice compuesto]
+  action
+  before
+  after
+  reason
+  timestamp
+ }
+ class MetadatoModelo {
+  modelVersion [índice único]
+  algoritmo
+  datasetVersion
+  metricasFuturas
+ }
+ Usuario "1" --> "*" Mensaje : creador / referencia
+ Mensaje "1" *-- "0..1" PrediccionOriginalIA : embebida
+ Mensaje "1" *-- "0..1" AsignacionEfectiva : embebida
+ Mensaje "0..1" --> "*" EventoAuditoria : referencia opcional
+ Usuario "0..1" --> "*" EventoAuditoria : actor humano opcional
+ PrediccionOriginalIA --> MetadatoModelo : modelVersion / referencia

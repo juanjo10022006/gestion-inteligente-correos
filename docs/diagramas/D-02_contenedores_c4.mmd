@@ -1,0 +1,16 @@
+---
+title: D-02 — Contenedores C4 L2
+---
+flowchart LR
+  %% Leyenda: flechas = protocolo o interfaz; /api/v1/ es pública y el contrato IA es interno.
+  O[Operador] -->|Navegador / HTTPS| W
+  A[Administrador] -->|Navegador / HTTPS| W
+  subgraph SIS["Sistema inteligente de clasificación de correos"]
+    W["Web<br/>React + TypeScript + Vite + Tailwind"]
+    API["API<br/>FastAPI + Pydantic"]
+    IA["Servicio IA interno<br/>scikit-learn"]
+    DB[("MongoDB")]
+    W -->|REST /api/v1/| API
+    API -->|Contrato interno versionado| IA
+    API -->|PyMongo| DB
+  end

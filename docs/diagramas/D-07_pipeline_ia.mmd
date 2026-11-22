@@ -1,0 +1,19 @@
+---
+title: D-07 — Pipeline de inteligencia artificial
+---
+flowchart TB
+  %% Leyenda: flechas = flujo de artefactos; test se usa una sola vez tras seleccionar con validación.
+  D[Datos lícitos, documentados<br/>y anonimizados] --> E[EDA y controles de calidad]
+  E --> P[Separación reproducible]
+  P --> TR[Entrenamiento]
+  P --> VA[Validación]
+  P --> TE[Test independiente<br/>reservado]
+  TR --> B[Entrenar baseline]
+  TR --> M[Entrenar TF-IDF +<br/>regresión logística]
+  B --> C[Comparar y seleccionar<br/>solo con validación]
+  M --> C
+  VA --> C
+  C --> F[Evaluación final en test<br/>Macro-F1 y calidad de enrutamiento<br/>métricas futuras]
+  TE --> F
+  F --> A[Artefacto, configuración<br/>y versión]
+  A --> I[Inferencia<br/>categoría, confianza y versión]
