@@ -14,7 +14,7 @@ from pymongo.errors import PyMongoError
 
 from backend.auth import UserIdentity, administrator, current_user, router as auth_router
 from backend.classifier import classify
-from backend.db import connect, get_database
+from backend.db import connect, get_database, initialize_database
 from backend.schemas import (
     AuditPage, ManualClassification, MessageCreated, MessageDetail, MessageInput, MessagePage, MessageSummary,
     StatusChange,
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     app.state.routing_threshold = threshold
     with connect() as client:
         app.state.db = get_database(client)
-        app.state.db.sessions.create_index("expiresAt", expireAfterSeconds=0)
+        initialize_database(app.state.db)
         yield
 
 

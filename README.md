@@ -22,6 +22,14 @@ docker compose exec api python -m backend.create_user admin ADMINISTRADOR
 
 La web escucha en el puerto local 8080 y MongoDB en el 27018 para compatibilidad con el flujo de desarrollo. Puedes cambiar esos puertos con `WEB_HOST_PORT` y `MONGO_HOST_PORT`. La API y la IA se comunican por la red interna de Compose. El umbral predeterminado de esta demo es 0,45 y se puede cambiar con `ROUTING_THRESHOLD`.
 
+Al iniciar, la API configura de forma idempotente las colecciones, validadores e índices de MongoDB. También puedes ejecutar esa operación explícitamente, sin borrar documentos:
+
+```powershell
+docker compose exec api python -m backend.scripts.init_db
+```
+
+La inicialización prepara `audit_events` para una integración posterior, pero no migra los eventos embebidos actuales.
+
 Para apagar la demo conservando los datos, ejecuta `docker compose stop`. Para volver a levantarla, ejecuta `docker compose up -d --wait`.
 
 ## Interfaz React
