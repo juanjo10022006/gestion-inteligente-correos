@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { ApiError, departments, formFilters, request } from './api';
 import type { Department, Detail, Message, MessagePage, Session } from './api';
 import { AuditView } from './AuditView';
+import { UsersView } from './UsersView';
+import { ActivationForm } from './ActivationForm';
 import './styles.css';
 
 const states: Record<string, string> = {
@@ -34,6 +36,8 @@ function Notice({ children }: { children: ReactNode }) {
 function Login({ onLogin, notice }: { onLogin: (session: Session) => void; notice: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [activating, setActivating] = useState(false);
+  const [activated, setActivated] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,13 +59,17 @@ function Login({ onLogin, notice }: { onLogin: (session: Session) => void; notic
 
   return <main className="login-layout">
     <div className="login-brand"><Brand /></div>
-    <form className="login-card stack" onSubmit={submit}>
+    {activating ? <ActivationForm cancel={() => setActivating(false)} done={() => {
+      setActivating(false); setActivated(true); setError('');
+    }} /> : <form className="login-card stack" onSubmit={submit}>
       <div><h1>Iniciar sesión</h1><p className="muted">Accede con tu cuenta del proyecto.</p></div>
       {(error || notice) && <Notice>{error || notice}</Notice>}
+      {activated && <p role="status">Cuenta activada. Ya puedes iniciar sesión.</p>}
       <label>Usuario<input name="username" autoComplete="username" required maxLength={64} /></label>
       <label>Contraseña<input name="password" type="password" autoComplete="current-password" required maxLength={256} /></label>
       <button className="primary" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
-    </form>
+      <button type="button" disabled={busy} onClick={() => setActivating(true)}>Activar mi cuenta</button>
+    </form>}
   </main>;
 }
 
@@ -222,6 +230,9 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: (notice?
   const [detailError, setDetailError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [auditFilter, setAuditFilter] = useState<string>();
+  const [usersOpen, setUsersOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const isAdmin = session.user.role === 'ADMINISTRADOR';
   const token = session.accessToken;
 
@@ -275,14 +286,28 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: (notice?
     <header className="topbar">
       <Brand />
       {isAdmin && <nav className="admin-nav" aria-label="Secciones">
-        <button aria-current={auditFilter === undefined ? 'page' : undefined} onClick={() => setAuditFilter(undefined)}>Bandeja</button>
-        <button aria-current={auditFilter !== undefined ? 'page' : undefined} onClick={() => setAuditFilter('')}>Auditoría</button>
+        <button aria-current={!usersOpen && auditFilter === undefined ? 'page' : undefined}
+          onClick={() => { setUsersOpen(false); setAuditFilter(undefined); }}>Bandeja</button>
+        <button aria-current={!usersOpen && auditFilter !== undefined ? 'page' : undefined}
+          onClick={() => { setUsersOpen(false); setAuditFilter(''); }}>Auditoría</button>
+        <button aria-current={usersOpen ? 'page' : undefined} onClick={() => setUsersOpen(true)}>Usuarios</button>
       </nav>}
       <div className="account"><span>{session.user.id}<small>{session.user.role === 'OPERADOR' ? 'Operador' : 'Administrador'}</small></span>
-        <button onClick={() => onLogout()}>Cerrar sesión</button></div>
+        <button disabled={loggingOut} onClick={async () => {
+          setLoggingOut(true); setLogoutError('');
+          try {
+            await request<void>('/auth/logout', token, { method: 'POST' });
+            onLogout('Sesión cerrada y revocada.');
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 401) onLogout(err.message);
+            else setLogoutError(errorText(err));
+          } finally { setLoggingOut(false); }
+        }}>{loggingOut ? 'Cerrando…' : 'Cerrar sesión'}</button></div>
     </header>
-    {isAdmin && auditFilter !== undefined && <AuditView key={auditFilter} token={token} initialMessageId={auditFilter} onLogout={onLogout} />}
-    <main className="workspace" hidden={auditFilter !== undefined}>
+    {logoutError && <Notice>{logoutError}</Notice>}
+    {isAdmin && usersOpen && <UsersView token={token} onLogout={onLogout} />}
+    {isAdmin && !usersOpen && auditFilter !== undefined && <AuditView key={auditFilter} token={token} initialMessageId={auditFilter} onLogout={onLogout} />}
+    <main className="workspace" hidden={usersOpen || auditFilter !== undefined}>
       <header className="workspace-title">
         <div><h1>Bandeja de entrada</h1>{list && <p className="muted">{list.total} {list.total === 1 ? 'correo' : 'correos'}</p>}</div>
         <button className="primary" onClick={() => { setComposing(true); setFeedback(''); }}>＋ Registrar correo</button>

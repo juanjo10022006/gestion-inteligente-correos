@@ -78,6 +78,7 @@ Este flujo es un contrato de diseño: no implica que ya exista un canal de entre
 |---|---|---|---|
 | `POST /api/v1/auth/login` | Público | `{username,password}` → `{accessToken,user:{id,role}}` | 400, 401 |
 | `POST /api/v1/auth/activate` | Público con credencial temporal | `{username,temporaryCredential,newPassword}` → `204` | 400, 401, 409, 422 |
+| `POST /api/v1/auth/logout` | Sesión vigente | revoca la sesión presentada → `204` | 401 |
 | `POST /api/v1/messages` | Operador | `{subject,body,sender?}` → `{id,status,prediction?,department?}`; persiste primero `RECIBIDO` y responde el estado final del intento | 401, 422, 503 controlado |
 | `GET /api/v1/messages` | Operador | filtros → `{items,page,pageSize,total}` | 401, 422 |
 | `GET /api/v1/messages/{id}` | Operador | — → detalle de mensaje | 401, 404 |
@@ -85,6 +86,8 @@ Este flujo es un contrato de diseño: no implica que ya exista un canal de entre
 | `PATCH /api/v1/messages/{id}/classification` | Operador | `{department,reason}` → detalle; corrige predicción o asigna manualmente si no existe | 401, 409, 422 |
 | `GET /api/v1/audit-events` | Administrador | filtros → `{items}` | 401, 403 |
 | `POST /api/v1/users` | Administrador | `{username,role,active}` → usuario y credencial temporal mostrada solo una vez | 401, 403, 409, 422 |
+| `GET /api/v1/users` | Administrador | `{page,pageSize}` → `{items,page,pageSize,total}` sin secretos | 401, 403, 422 |
+| `PATCH /api/v1/users/{username}` | Administrador | `{role,active}` → cuenta pública; invalida sesiones anteriores ante cambio | 401, 403, 404, 409, 422 |
 
 Ejemplo de predicción integrada en la respuesta:
 

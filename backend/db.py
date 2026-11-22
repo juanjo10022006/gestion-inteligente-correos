@@ -25,18 +25,28 @@ COLLECTION_VALIDATORS = {
                 "activationCredentialHash": {"bsonType": "binData"},
                 "createdAt": {"bsonType": "date"},
                 "updatedAt": {"bsonType": "date"},
+                "activated": {"bsonType": "bool"},
+                "activationExpiresAt": {"bsonType": "date"},
+                "authVersion": {"bsonType": ["int", "long"], "minimum": 0},
+                "revision": {"bsonType": ["int", "long"], "minimum": 0},
+                "pendingAudit": {"bsonType": "array", "items": {"bsonType": "object"}},
             },
         }
     },
     "sessions": {
         "$jsonSchema": {
             "bsonType": "object",
-            "required": ["_id", "userId", "createdAt", "expiresAt"],
+            "required": ["_id", "userId", "createdAt"],
+            "anyOf": [{"required": ["expiresAt"]}, {"required": ["validUntil"]}],
             "properties": {
                 "_id": {"bsonType": "string", "pattern": r"^[a-f0-9]{64}$"},
                 "userId": {"bsonType": "string", "minLength": 1, "maxLength": 64},
                 "createdAt": {"bsonType": "date"},
                 "expiresAt": {"bsonType": "date"},
+                "validUntil": {"bsonType": "date"},
+                "revokedAt": {"bsonType": "date"},
+                "authVersion": {"bsonType": ["int", "long"], "minimum": 0},
+                "pendingAudit": {"bsonType": "array", "items": {"bsonType": "object"}},
             },
         }
     },
@@ -133,8 +143,14 @@ COLLECTION_VALIDATORS = {
 }
 
 INDEXES = {
+    "users": [
+        ([("pendingAudit.0", ASCENDING)], "users_pending_audit",
+         {"partialFilterExpression": {"pendingAudit.0": {"$exists": True}}}),
+    ],
     "sessions": [
         ([("expiresAt", ASCENDING)], "expiresAt_1", {"expireAfterSeconds": 0}),
+        ([("pendingAudit.0", ASCENDING)], "sessions_pending_audit",
+         {"partialFilterExpression": {"pendingAudit.0": {"$exists": True}}}),
     ],
     "messages": [
         (

@@ -37,7 +37,7 @@ try {
     }
     $ErrorActionPreference = "Stop"
     if (-not $mongoReady -or -not $aiReady) { throw "Los servicios temporales no quedaron disponibles." }
-    foreach ($test in @("init_db_verification.py", "compose_acceptance.py", "history_acceptance.py")) {
+    foreach ($test in @("init_db_verification.py", "compose_acceptance.py", "history_acceptance.py", "access_acceptance.py")) {
         docker run --rm --network $network `
             --mount "type=bind,source=$PSScriptRoot,target=/checks,readonly" `
             -e "PYTHONPATH=/app" `

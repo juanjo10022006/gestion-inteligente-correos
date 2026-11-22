@@ -46,7 +46,7 @@ Abre [Gestión de correos](http://127.0.0.1:5173/) e inicia sesión con tu cuent
 
 ## Ejecutar el primer flujo en local
 
-Usar mensajes y cuentas ficticios. La activación de cuentas por API sigue pendiente. Para activar la clasificación, inicia también el [servicio de IA](ai_service/README.md).
+Usar mensajes y cuentas ficticios. Para activar la clasificación, inicia también el [servicio de IA](ai_service/README.md).
 
 Desde la raíz del proyecto, con Python 3.10+ y Docker Compose:
 
@@ -109,7 +109,17 @@ Los seis módulos funcionales son:
 5. Gestión de estados.
 6. Auditoría.
 
-El sistema incluye autenticación y creación local de usuarios por consola. La activación y la administración de usuarios desde la aplicación siguen pendientes.
+El sistema incluye autenticación, activación y administración de cuentas desde React. La creación local por consola se conserva para el primer administrador y cuentas demo anteriores.
+
+### Cuentas y sesiones
+
+- En **Usuarios**, un administrador crea cuentas de operador o administrador, define su habilitación y recibe una credencial temporal que solo se muestra en ese momento. Debe entregarla por un canal aprobado; la aplicación no envía correos.
+- Desde **Activar mi cuenta**, el titular consume la credencial antes de 24 horas y define una contraseña de 12–256 caracteres no compuesta solo por espacios. El secreto temporal no puede recuperarse ni reutilizarse.
+- Las cuentas CLI existentes siguen funcionando sin migración. En cuentas nuevas, estar habilitada y estar activada son condiciones diferentes.
+- Cambiar el rol o estado invalida las sesiones anteriores; no se permite desactivar o degradar la propia cuenta administrativa.
+- Las sesiones duran una hora. **Cerrar sesión** revoca el token en servidor antes de retirar la sesión local. No se guardan tokens ni credenciales temporales en `localStorage`.
+- La auditoría administrativa incluye cuentas y sesiones, sin contraseñas, tokens, hashes ni credenciales temporales. Los detalles de almacenamiento y TTL están en [ADR-08](docs/07_decisiones_tecnicas.md).
+- El lanzador `tests/run_history_checks.ps1` también ejecuta `tests/access_acceptance.py` contra MongoDB efímero, sin usar la base o volumen de demostración.
 
 Los únicos roles son `OPERADOR` y `ADMINISTRADOR`. No se integran Gmail, Outlook, SMTP, adjuntos ni autoservicio externo.
 

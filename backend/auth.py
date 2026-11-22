@@ -2,13 +2,16 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, SecretStr
+from pymongo import ReturnDocument
 
-Role = Literal["OPERADOR", "ADMINISTRADOR"]
+from backend.access_models import ActivationInput, Role
+from backend.audit import make_event, publish_collection_pending
+
 router = APIRouter(prefix="/api/v1/auth", tags=["Acceso"])
 bearer = HTTPBearer(auto_error=False)
 session_duration = timedelta(hours=1)
@@ -45,20 +48,27 @@ def unauthorized():
 def login(credentials: LoginInput, request: Request, response: Response):
     db = request.app.state.db
     user = db.users.find_one({"_id": credentials.username})
-    salt = user["salt"] if user else bytes(16)
-    expected = user["passwordHash"] if user else bytes(64)
+    salt = user.get("salt", bytes(16)) if user else bytes(16)
+    expected = user.get("passwordHash", bytes(64)) if user else bytes(64)
     valid = hmac.compare_digest(password_hash(credentials.password.get_secret_value(), salt), expected)
-    if not valid or not user or not user["active"]:
+    if not valid or not user or not user["active"] or not user.get("activated", True):
         raise unauthorized()
 
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    db.sessions.insert_one({
+    session = {
         "_id": token_digest(token),
         "userId": user["_id"],
         "createdAt": now,
-        "expiresAt": now + session_duration,
-    })
+        "validUntil": now + session_duration,
+        "authVersion": user.get("authVersion", 0),
+        "pendingAudit": [make_event(
+            None, "SESION_INICIADA", user["_id"], None,
+            {"userId": user["_id"], "expiresAt": now + session_duration},
+        )],
+    }
+    db.sessions.insert_one(session)
+    publish_collection_pending(db, "sessions", session["_id"])
     response.headers["Cache-Control"] = "no-store"
     return LoginResult(accessToken=token, user=UserIdentity(id=user["_id"], role=user["role"]))
 
@@ -72,12 +82,17 @@ def current_user(
     db = request.app.state.db
     session = db.sessions.find_one({
         "_id": token_digest(credentials.credentials),
-        "expiresAt": {"$gt": datetime.now(timezone.utc)},
+        "$or": [
+            {"validUntil": {"$gt": datetime.now(timezone.utc)}},
+            {"validUntil": {"$exists": False}, "expiresAt": {"$gt": datetime.now(timezone.utc)}},
+        ],
+        "revokedAt": {"$exists": False},
     })
     if session is None:
         raise unauthorized()
     user = db.users.find_one({"_id": session["userId"], "active": True})
-    if user is None:
+    if (user is None or not user.get("activated", True)
+            or user.get("authVersion", 0) != session.get("authVersion", 0)):
         raise unauthorized()
     return UserIdentity(id=user["_id"], role=user["role"])
 
@@ -86,3 +101,62 @@ def administrator(user: Annotated[UserIdentity, Depends(current_user)]) -> UserI
     if user.role != "ADMINISTRADOR":
         raise HTTPException(403, "Se requiere el rol ADMINISTRADOR.")
     return user
+
+
+@router.post("/activate", status_code=204)
+def activate(payload: ActivationInput, request: Request):
+    # Local import keeps the users router's administrator dependency acyclic.
+    from backend.users import credential_hash, user_view
+    db = request.app.state.db
+    publish_collection_pending(db, "users", payload.username)
+    now = datetime.now(timezone.utc)
+    query = {
+        "_id": payload.username, "activated": False, "active": True,
+        "activationCredentialHash": credential_hash(payload.temporaryCredential.get_secret_value()),
+        "activationExpiresAt": {"$gt": now},
+    }
+    before = db.users.find_one(query)
+    if before is None:
+        raise unauthorized()
+    salt = secrets.token_bytes(16)
+    updates = {
+        "salt": salt, "passwordHash": password_hash(payload.newPassword.get_secret_value(), salt),
+        "activated": True, "updatedAt": now,
+    }
+    query["revision"] = before.get("revision", {"$exists": False})
+    query["activationExpiresAt"] = {"$gt": datetime.now(timezone.utc)}
+    event = make_event(None, "CUENTA_ACTIVADA", payload.username, user_view(before), user_view({**before, **updates}))
+    document = db.users.find_one_and_update(
+        query,
+        {"$set": updates, "$unset": {"activationCredentialHash": "", "activationExpiresAt": ""},
+         "$inc": {"revision": 1, "authVersion": 1}, "$push": {"pendingAudit": event}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if document is None:
+        raise unauthorized()
+    publish_collection_pending(db, "users", payload.username)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/logout", status_code=204)
+def logout(
+    request: Request, user: Annotated[UserIdentity, Depends(current_user)],
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+):
+    db = request.app.state.db
+    identifier = token_digest(credentials.credentials)
+    now = datetime.now(timezone.utc)
+    session = db.sessions.find_one({"_id": identifier})
+    if session is None:
+        raise unauthorized()
+    event = make_event(None, "SESION_CERRADA", user.id, {"userId": user.id, "revoked": False},
+                       {"userId": user.id, "revoked": True})
+    result = db.sessions.update_one(
+        {"_id": identifier, "revokedAt": {"$exists": False}},
+        {"$set": {"revokedAt": now, "validUntil": session.get("validUntil", session.get("expiresAt"))},
+         "$unset": {"expiresAt": ""}, "$push": {"pendingAudit": event}},
+    )
+    if not result.matched_count:
+        raise unauthorized()
+    publish_collection_pending(db, "sessions", identifier)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})

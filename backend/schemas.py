@@ -62,7 +62,7 @@ class MessagePage(BaseModel):
 class AuditEvent(BaseModel):
     id: str
     action: str
-    messageId: str
+    messageId: str | None = None
     actorUserId: str
     actorType: Literal["SISTEMA", "USUARIO"]
     createdAt: datetime

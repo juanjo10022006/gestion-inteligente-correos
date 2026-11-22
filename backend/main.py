@@ -15,6 +15,7 @@ from pymongo.errors import PyMongoError
 from ai_service.contract import Category
 from backend.audit import event_pipeline, make_event, publish_pending, snapshot, update_with_events
 from backend.auth import UserIdentity, administrator, current_user, router as auth_router
+from backend.users import router as users_router
 from backend.classifier import classify
 from backend.db import connect, get_database, initialize_database
 from backend.filters import date_range
@@ -42,12 +43,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Gestión inteligente de correos", lifespan=lifespan)
 app.include_router(auth_router)
+app.include_router(users_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, error: RequestValidationError):
     if request.url.path == "/api/v1/auth/login":
         return JSONResponse(status_code=422, content={"detail": "Usuario o contraseña con formato inválido."})
+    if request.url.path.startswith(("/api/v1/auth/", "/api/v1/users")):
+        return JSONResponse(status_code=422, content={"detail": "Revisa los campos y la política de contraseñas."})
     return await request_validation_exception_handler(request, error)
 
 

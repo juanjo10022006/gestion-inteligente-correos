@@ -69,5 +69,6 @@ export async function request<T>(path: string, token?: string, options: RequestI
     if (response.status === 401 && token) message = 'Tu sesión terminó. Vuelve a iniciar sesión.';
     throw new ApiError(message, response.status);
   }
+  if (response.status === 204) return undefined as T;
   return response.json();
 }

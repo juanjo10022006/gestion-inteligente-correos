@@ -4,7 +4,7 @@ import { ApiError, formFilters, localDateInput, request } from './api';
 type AuditEvent = {
   id: string;
   action: string;
-  messageId: string;
+  messageId: string | null;
   actorUserId: string;
   createdAt: string;
   reason: string | null;
@@ -22,6 +22,11 @@ const actions: Record<string, string> = {
   GESTION_INICIADA: 'Gestión iniciada',
   MENSAJE_CERRADO: 'Correo cerrado',
   PREDICCION_REGISTRADA: 'Predicción registrada',
+  USUARIO_CREADO: 'Cuenta creada',
+  CUENTA_ACTIVADA: 'Cuenta activada',
+  USUARIO_ACTUALIZADO: 'Cuenta actualizada',
+  SESION_INICIADA: 'Inicio de sesión',
+  SESION_CERRADA: 'Cierre de sesión',
 };
 const dateFormat = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -93,13 +98,13 @@ export function AuditView({ token, initialMessageId, onLogout }: {
               <td><time dateTime={event.createdAt}>{dateFormat.format(new Date(event.createdAt))}</time></td>
               <td>{actions[event.action] ?? event.action}</td>
               <td>{event.actorUserId === 'SISTEMA' ? 'Sistema' : event.actorUserId}</td>
-              <td><button className="audit-id" onClick={() => {
+              <td>{event.messageId ? <button className="audit-id" onClick={() => {
                 const params = new URLSearchParams(filters);
-                params.set('messageId', event.messageId);
+                params.set('messageId', event.messageId!);
                 setFilters(params.toString());
                 resetForm(value => value + 1);
               }}
-                aria-label={'Filtrar por correo ' + event.messageId}>{event.messageId}</button></td>
+                aria-label={'Filtrar por correo ' + event.messageId}>{event.messageId}</button> : 'Cuenta / sesión'}</td>
               <td>{event.reason ?? '—'}</td>
               <td>{event.source === 'LEGACY' ? 'Histórico embebido; antes/después no disponible' :
                 <details><summary>Antes / después</summary>

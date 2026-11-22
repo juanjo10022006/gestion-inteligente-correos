@@ -21,7 +21,7 @@ def snapshot(document):
 def make_event(message_id, action, actor, before, after, reason=None):
     return {
         "_id": ObjectId(),
-        "messageId": str(message_id),
+        "messageId": str(message_id) if message_id is not None else None,
         "actorType": "SISTEMA" if actor is None else "USUARIO",
         "actorUserId": actor if actor is not None else "SISTEMA",
         "action": action,
@@ -32,11 +32,12 @@ def make_event(message_id, action, actor, before, after, reason=None):
     }
 
 
-def publish_pending(database, message_id=None):
+def publish_collection_pending(database, name, identifier=None):
+    collection = database[name]
     query = {"pendingAudit.0": {"$exists": True}}
-    if message_id is not None:
-        query["_id"] = ObjectId(message_id)
-    for message in database.messages.find(query, {"pendingAudit": 1}):
+    if identifier is not None:
+        query["_id"] = identifier
+    for message in collection.find(query, {"pendingAudit": 1}):
         for event in message["pendingAudit"]:
             try:
                 database.audit_events.insert_one(event)
@@ -44,9 +45,23 @@ def publish_pending(database, message_id=None):
                 # An interrupted delivery may already have inserted this exact event.
                 if database.audit_events.find_one({"_id": event["_id"]}) != event:
                     raise
-            database.messages.update_one(
+            collection.update_one(
                 {"_id": message["_id"]}, {"$pull": {"pendingAudit": {"_id": event["_id"]}}},
             )
+    if name == "sessions":
+        # Re-arm TTL only after delivery, also recovering a crash after acknowledgement.
+        ready = {"pendingAudit.0": {"$exists": False}, "validUntil": {"$exists": True},
+                 "expiresAt": {"$exists": False}}
+        if identifier is not None:
+            ready["_id"] = identifier
+        collection.update_many(ready, [{"$set": {"expiresAt": "$validUntil"}}])
+
+
+def publish_pending(database, message_id=None):
+    publish_collection_pending(database, "messages", ObjectId(message_id) if message_id is not None else None)
+    if message_id is None:
+        for name in ("users", "sessions"):
+            publish_collection_pending(database, name)
 
 
 def update_with_events(database, before, updates, events):

@@ -39,8 +39,8 @@ def call(path, expected, *, token=None, body=None, method=None):
     except HTTPError as error:
         response = error
     with response:
-        payload = json.load(response)
-        assert response.status == expected, (path, expected, response.status, payload)
+        payload = json.load(response) if response.status != 204 else None
+        assert response.status == expected, (path, expected, response.status)
     return payload
 
 
