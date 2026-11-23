@@ -189,9 +189,9 @@ Los únicos roles son `OPERADOR` y `ADMINISTRADOR`. No se integran Gmail, Outloo
 | [SRS](docs/02_srs.md) / [trazabilidad](docs/04_matriz_trazabilidad.md) | Requisitos y correspondencia con pruebas |
 | [arc42](docs/06_arquitectura_diagramas.md) / [diagramas](docs/diagramas/README.md) | Arquitectura y fuentes UML/C4 |
 | [OpenAPI exportado](docs/openapi.json) | Contrato generado; [alcance y reproducción](docs/MANUAL_TECNICO.md#api-y-openapi) |
-| [Índice completo](docs/README_DOCUMENTACION.md) | Prototipos, backlog e informes históricos |
+| [Índice completo](docs/README_DOCUMENTACION.md) | Especificaciones y entregables especializados |
 
-La carpeta `docs/` contiene visión, backlog, historias de usuario, trazabilidad, decisiones técnicas, modelo conceptual, diagramas, prototipos e informes históricos de revisión.
+La carpeta `docs/` conserva visión, backlog, historias, trazabilidad, arquitectura, modelo de datos, diagramas, prototipos y entregables especializados. El [informe final](docs/INFORME_FINAL_PROYECTO.md) es el único informe general e integra los hallazgos relevantes; los informes preliminares originales siguen disponibles en el historial Git.
 
 ## Estado y límites
 

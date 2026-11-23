@@ -21,7 +21,7 @@ La cobertura de aceptación/API no equivale a cobertura unitaria completa ni a v
 | E-TECH | Salidas observadas en la intervención técnica anterior; código de pruebas en `3f9a067` | Cinco suites, artefacto y smoke pasaron entonces. No hay un log autónomo de toda esa corrida versionado; se debe conservar uno en la prueba final. El código de un test no prueba por sí solo que se ejecutó |
 | E-GIT | Commits `d657e7a`, `e48ff3f`, `5443006`, `3f9a067` comprobados en el historial | Correcciones presentes; no sustituyen la evidencia de ejecución |
 | E-DOC | [OpenAPI generado](openapi.json), comparación con `app.openapi()` y fuentes backend coincidentes | Exportación realizada ahora sin ciclo de arranque ni MongoDB; no acredita respuestas HTTP reales |
-| E-HIST | [Revisión de implementación](INFORME_REVISION_IMPLEMENTACION_MVP.md) | Auditoría de `0641fd5`; útil históricamente, no dictamen del código actual |
+| E-HIST | [Hallazgos y resultados históricos consolidados](INFORME_FINAL_PROYECTO.md#7-pruebas-y-calidad) | Revisión de `0641fd5`; antecedentes, correcciones y límites, no dictamen del código actual. Originales recuperables en Git según la procedencia del informe |
 
 En esta intervención **no se ejecutaron suites integrales, builds completos ni entrenamientos**. Se comprobaron documentos, archivos curados, contratos y sintaxis de comandos. En el cierre técnico anterior, después de corregir LF, se verificó el modelo `4899…` contra `/health` y se reprodujeron notebooks; las pruebas de software anteriores se conservaron y se contrastó equivalencia funcional del pipeline. No se confunden esas corridas.
 
@@ -87,7 +87,7 @@ Fuente: salida de sesión técnica E-TECH, no un log autónomo versionado. `meas
 | DEF-08 | 422 automático OpenAPI no refleja handler seguro de acceso; varios errores no declarados | Pendiente documental/técnico del contrato; no se alteró a mano el exportado | Sin corrección |
 | DEF-09 | RF-04 pide versión de preparación; no se registra separadamente cuando falta predicción | Pendiente acordar aceptación/corrección específica, sin rebajar requisito | Sin corrección |
 
-Las referencias de commit se contrastaron en Git; el historial preliminar se conserva como [anexo](INFORME_REVISION_IMPLEMENTACION_MVP.md), no se reescribe para simular que nunca hubo defectos.
+Las referencias de commit se contrastaron en el cierre documental. El [informe general](INFORME_FINAL_PROYECTO.md#7-pruebas-y-calidad) integra los hallazgos preliminares con sus correcciones y estados vigentes; sus versiones completas permanecen en Git. No se interpreta la retirada de informes redundantes como ausencia histórica de defectos.
 
 ## Recorrido integral manual pendiente
 

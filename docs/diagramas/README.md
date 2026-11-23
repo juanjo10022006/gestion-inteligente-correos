@@ -16,7 +16,7 @@ Las fuentes de esta carpeta son representaciones de diseño de la fase 1C; no so
 
 ## Validación de renderizado
 
-En esta revisión se detectaron Java, Node y `npx`, pero no PlantUML JAR/CLI ni Mermaid CLI instalados en el repositorio o disponibles como comandos locales. Por tanto, el renderizado de `.puml` y `.mmd` permanece **pendiente de validación con renderizadores compatibles**; no se instalaron dependencias. Sí se verificaron estructura, referencias, estados, contratos y orden crítico mediante análisis local; el detalle está en [el informe de revisión](../INFORME_REVISION_DIAGRAMAS.md).
+La revisión histórica detectó Java, Node y `npx`, pero no PlantUML JAR/CLI ni Mermaid CLI disponibles. El renderizado de `.puml` y `.mmd` permanece **pendiente de validación con renderizadores compatibles**. Se verificaron estructura, referencias, estados, contratos y orden crítico; las correcciones y la validación XML/`viewBox` de SVG están consolidadas en el [informe general](../INFORME_FINAL_PROYECTO.md#4-arquitectura-e-implementación). No se instalaron herramientas ni se repitió esa revisión al reorganizar los documentos.
 
 ## Lectura respecto del MVP consolidado
 
