@@ -1,0 +1,17 @@
+[
+  {
+    "notebook": "00_verificacion_entorno.ipynb",
+    "executedCells": 2,
+    "errors": 0
+  },
+  {
+    "notebook": "01_eda_dataset.ipynb",
+    "executedCells": 3,
+    "errors": 0
+  },
+  {
+    "notebook": "02_entrenamiento_evaluacion.ipynb",
+    "executedCells": 5,
+    "errors": 0
+  }
+]

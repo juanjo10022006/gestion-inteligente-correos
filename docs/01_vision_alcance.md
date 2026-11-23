@@ -3,6 +3,8 @@
 **Proyecto 15 — Ingeniería de Software, Universidad Autónoma de Occidente**  
 **Estado:** Fase 1, documentación. **Versión:** 0.1 — 21 de noviembre de 2026.
 
+> Línea base de visión conservada: la formulación en futuro corresponde al diseño inicial. El estado actual de implementación, evidencias y pendientes se integra en [INFORME_FINAL_PROYECTO.md](INFORME_FINAL_PROYECTO.md), sin cambiar los objetivos OBJ-01…08 ni declarar beneficios empresariales medidos.
+
 ## 1. Introducción y contexto
 
 El Proyecto 15 de la guía académica propone clasificar mensajes empresariales por área o tipo de solicitud y apoyar su enrutamiento, respetando permisos y privacidad. La solución será una aplicación web para registrar mensajes corporativos de prueba, sugerir su departamento mediante clasificación de texto y gestionar su atención con trazabilidad.

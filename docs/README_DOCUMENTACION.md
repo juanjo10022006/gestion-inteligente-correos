@@ -11,6 +11,12 @@
 | 6 | [06 arc42](06_arquitectura_diagramas.md) | arquitectura y relaciones |
 | 7 | [07 ADR](07_decisiones_tecnicas.md) / [08 datos](08_modelo_datos_preliminar.md) | decisiones y modelo conceptual |
 | 8 | [Catálogo de diagramas](diagramas/README.md) / [prototipos UI](05_prototipos.md) | fuentes editables D-01–D-09 y UI-01–UI-06 |
-| 9 | [Revisión pre-diagramas](INFORME_REVISION_PRE_DIAGRAMAS.md) / [revisión de diagramas](INFORME_REVISION_DIAGRAMAS.md) | informes separados de 1B2 y corrección posterior |
+| 9 | [Evaluación final de IA](09_evaluacion_final_ia.md) / [evidencia curada](evidencias/ia/README.md) | test separado ya observado, baseline, matrices, enrutamiento y límites |
+| 10 | [Manual técnico](MANUAL_TECNICO.md) | instalación, Docker, cuentas/demo, persistencia, API y diagnóstico |
+| 11 | [Manual de usuario](MANUAL_USUARIO.md) | pantallas reales y recorrido por roles |
+| 12 | [Plan y resultados](PLAN_Y_RESULTADOS_PRUEBAS.md) | requisitos/pruebas, defectos, evidencia previa y aceptación pendiente |
+| 13 | [Informe final integrador](INFORME_FINAL_PROYECTO.md) | único informe general; hallazgos consolidados, resultados y entregables 17.7–17.9 |
+| 14 | [OpenAPI generado](openapi.json) | exportado de `app.openapi()`; límites/reproducción en el manual técnico |
+| 15 | [README de notebooks](../ai_service/notebooks/README.md) / [servicio IA](../ai_service/README.md) | entornos, kernels, bundle y evaluación del archivo servido |
 
-Estado: línea base documental de 1B, 1B2 y 1C revisada; existen fuentes editables de diagramas y prototipos, no software implementado. Colecciones físicas MongoDB, entrenamiento y despliegue no se han realizado.
+Estado: documentación de entrega contrastada con el commit técnico `3f9a067`. El [README principal](../README.md) permite iniciar desde GitHub con los cuatro servicios y acceso explícito. No se reejecutaron entrenamientos ni suites integrales en este cierre. Permanecen pendientes aceptación formal de navegador, cobertura unitaria completa, parciales SRS y video/demo posterior. La visión, fichas, prototipos, diagramas y documentos especializados se conservan. Los hallazgos relevantes de los cuatro informes preliminares están consolidados en el informe general; los originales quedan en el historial Git, no como archivos redundantes del árbol vigente.

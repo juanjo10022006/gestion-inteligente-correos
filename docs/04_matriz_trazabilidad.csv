@@ -1,16 +1,16 @@
-Objetivo,Requisito,EpicaHistoria,Prototipo,Componente,Endpoint,CasoPrueba
-OBJ-07,"RF-01; RNF-01; RNF-02","EPI-001; HU-01",UI-01,Auth,"POST /api/v1/auth/login; POST /api/v1/auth/activate",CP-08
-OBJ-07,"RF-02; RN-06; RNF-02; RNF-10","EPI-001; HU-02",UI-06,"Usuarios; Auth; Auditoria","POST /api/v1/users; POST /api/v1/auth/activate",CP-08
-OBJ-02,"RF-03; RNF-08; RNF-09","EPI-002; HU-03",UI-03,"Mensajes; Auditoria",POST /api/v1/messages,"CP-01; CP-02"
-OBJ-03,"RF-04; RNF-05; RNF-11","EPI-003; HU-06",UI-04,Clasificacion,"Contrato interno IA",CP-03
-OBJ-03,"RF-05; RN-01; RNF-10","EPI-003; HU-07",UI-04,Clasificacion,"Contrato interno IA",CP-03
-OBJ-04,"RF-06; RN-03; RN-04; RNF-04","EPI-003; HU-08","UI-04; UI-05","Enrutamiento; Auditoria",POST /api/v1/messages,CP-04
-OBJ-04,"RF-07; RN-05; RNF-04; RNF-12","EPI-003; HU-09","UI-03; UI-04","Clasificacion; Mensajes","POST /api/v1/messages; PATCH /api/v1/messages/{id}/classification",CP-10
-OBJ-05,"RF-08; RNF-03; RNF-06","EPI-002; HU-04",UI-02,Mensajes,GET /api/v1/messages,CP-05
-OBJ-05,"RF-09; RNF-07","EPI-002; HU-05",UI-04,Mensajes,GET /api/v1/messages/{id},CP-05
-OBJ-05,"RF-10; RN-02; RNF-08; RNF-10","EPI-004; HU-10",UI-05,"Mensajes; Auditoria",PATCH /api/v1/messages/{id}/status,CP-06
-OBJ-05,"RF-11; RN-06; RN-07; RNF-10","EPI-004; HU-11",UI-05,"Enrutamiento; Auditoria",PATCH /api/v1/messages/{id}/classification,"CP-06; CP-10"
-OBJ-05,"RF-13; RN-02","EPI-004; HU-12",UI-05,"Mensajes; Auditoria",PATCH /api/v1/messages/{id}/status,CP-06
-OBJ-06,"RF-12; RN-08; RNF-10","EPI-005; HU-13",UI-06,Auditoria,GET /api/v1/audit-events,CP-07
-OBJ-08,"RNF-05; RNF-11","EPI-005; HU-14",,Clasificacion,"Contrato IA/documentacion",CP-09
-OBJ-01,"RNF-03; RNF-12","EPI-005; HU-14","UI-02 a UI-05","API; Clasificacion","Todos los anteriores","CP-01 a CP-10"
+Objetivo,Requisito,EpicaHistoria,Prototipo,Componente,Endpoint,CasoPrueba,EstadoVerificacion,Evidencia,Limitaciones
+OBJ-07,"RF-01; RNF-01; RNF-02","EPI-001; HU-01",UI-01,Auth,"POST /api/v1/auth/login; POST /api/v1/auth/activate",CP-08,Ejecutada con evidencia previa,../tests/access_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,UI integral y TLS no local pendientes
+OBJ-07,"RF-02; RN-06; RNF-02; RNF-10","EPI-001; HU-02",UI-06,"Usuarios; Auth; Auditoria","POST /api/v1/users; POST /api/v1/auth/activate; GET /api/v1/users; PATCH /api/v1/users/{username}; POST /api/v1/users/{username}/activation-credential",CP-08,Ejecutada con evidencia previa,../tests/access_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,UI integral pendiente
+OBJ-02,"RF-03; RNF-08; RNF-09","EPI-002; HU-03",UI-03,"Mensajes; Auditoria",POST /api/v1/messages,"CP-01; CP-02",Ejecutada con evidencia previa,../tests/compose_acceptance.py; ../tests/history_acceptance.py; ../tests/final_acceptance.py,No sustituye revisión de privacidad ni UI
+OBJ-03,"RF-04; RNF-05; RNF-11","EPI-003; HU-06",UI-04,Clasificacion,Contrato interno IA,CP-03,Parcial,../tests/compose_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,Sin predicción falta versión de preparación independiente
+OBJ-03,"RF-05; RN-01; RNF-10","EPI-003; HU-07",UI-04,Clasificacion,Contrato interno IA,CP-03,Ejecutada con evidencia previa,../tests/compose_acceptance.py; evidencias/ia/evaluacion_artefacto.json,Dataset sintético y UI pendiente
+OBJ-04,"RF-06; RN-03; RN-04; RNF-04","EPI-003; HU-08","UI-04; UI-05","Enrutamiento; Auditoria",POST /api/v1/messages,CP-04,Parcial,../tests/compose_acceptance.py; evidencias/ia/evaluacion_artefacto.json,Pruebas a 0.45 no validan literalmente H-01=0.70
+OBJ-04,"RF-07; RN-05; RNF-04; RNF-12","EPI-003; HU-09","UI-03; UI-04","Clasificacion; Mensajes","POST /api/v1/messages; PATCH /api/v1/messages/{message_id}/classification",CP-10,Ejecutada con evidencia previa,../tests/compose_acceptance.py; ../tests/final_acceptance.py,Arranque inicial con IA insalubre no garantizado
+OBJ-05,"RF-08; RNF-03; RNF-06","EPI-002; HU-04",UI-02,Mensajes,GET /api/v1/messages,CP-05,Ejecutada con evidencia previa,../tests/history_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,Accesibilidad y rendimiento integral pendientes
+OBJ-05,"RF-09; RNF-07","EPI-002; HU-05",UI-04,Mensajes,GET /api/v1/messages/{message_id},CP-05,Ejecutada con evidencia previa,../tests/compose_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,Usabilidad y UI autenticada pendientes
+OBJ-05,"RF-10; RN-02; RNF-08; RNF-10","EPI-004; HU-10",UI-05,"Mensajes; Auditoria",PATCH /api/v1/messages/{message_id}/status,CP-06,Ejecutada con evidencia previa,../tests/compose_acceptance.py; ../tests/history_acceptance.py,No garantiza inmutabilidad ante administrador MongoDB
+OBJ-05,"RF-11; RN-06; RN-07; RNF-10","EPI-004; HU-11",UI-05,"Enrutamiento; Auditoria",PATCH /api/v1/messages/{message_id}/classification,"CP-06; CP-10",Ejecutada con evidencia previa,../tests/history_acceptance.py; ../tests/final_acceptance.py,Tasa real de correcciones humanas no medida
+OBJ-05,"RF-13; RN-02","EPI-004; HU-12",UI-05,"Mensajes; Auditoria",PATCH /api/v1/messages/{message_id}/status,CP-06,Ejecutada con evidencia previa,../tests/compose_acceptance.py; PLAN_Y_RESULTADOS_PRUEBAS.md,Recorrido UI final pendiente
+OBJ-06,"RF-12; RN-08; RNF-10","EPI-005; HU-13",UI-06,Auditoria,GET /api/v1/audit-events,CP-07,Ejecutada con evidencia previa,../tests/history_acceptance.py; ../tests/access_acceptance.py,UI y permisos MongoDB restrictivos pendientes
+OBJ-08,"RNF-05; RNF-11","EPI-005; HU-14",,Clasificacion,Contrato IA/documentacion,CP-09,Parcial,evidencias/ia/evaluacion_artefacto.json; ../tests/artifact_verification.py,Test separado pero ya observado; unitarias completas pendientes
+OBJ-01,"RNF-03; RNF-12","EPI-005; HU-14","UI-02 a UI-05","API; Clasificacion",Todos los anteriores,CP-01 a CP-10,Parcial,PLAN_Y_RESULTADOS_PRUEBAS.md; ../tests/run_compose_smoke.ps1,Aceptación integral y medición final pendientes

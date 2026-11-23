@@ -1,0 +1,7 @@
+# Academic tooling only: not installed in the ai inference stage.
+matplotlib==3.11.2
+pandas==3.1.1
+nbformat==5.10.4
+nbclient==0.11.0
+ipykernel==7.4.0
+jupyterlab==4.6.6

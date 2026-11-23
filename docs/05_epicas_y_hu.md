@@ -1,7 +1,9 @@
 # Épicas e historias de usuario
 
 ## Alcance y nomenclatura
-Este documento detalla las historias del [SRS](02_srs.md). Conserva los identificadores del backlog y la matriz; las pruebas y pantallas son previstas, no implementadas.
+Este documento conserva las fichas y criterios de las historias del [SRS](02_srs.md), con sus identificadores, responsables y prioridad. Las menciones «propuesto/previsto» en fichas describen la referencia de diseño UI/CP original, no la ausencia actual de React/API. El estado de realización y sus límites se registra en [backlog](03_backlog.md), [matriz](04_matriz_trazabilidad.md) y [plan de pruebas](PLAN_Y_RESULTADOS_PRUEBAS.md); implementación no equivale a aceptación completa.
+
+**Contraste con `3f9a067`:** HU-01/02 ya tienen alta, activación, administración y recuperación de credencial pendiente. HU-03…13 cuentan con pruebas técnicas previas, con parciales explícitos en HU-06 (versión de preparación sin predicción) y HU-08 (escenario original H-01=0,70 frente a Compose 0,45 provisional). HU-14 incorpora notebooks, bundle y pruebas, pero sigue parcial hasta cerrar cobertura unitaria y aceptación integral. No se modifican los escenarios históricos para simular cumplimiento; toda UI autenticada está pendiente de comprobación formal de navegador.
 
 | ID histórico | ID de ficha |
 |---|---|

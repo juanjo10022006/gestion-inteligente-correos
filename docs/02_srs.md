@@ -1,13 +1,15 @@
 # SRS — Especificación de requisitos de software
 
-**Sistema:** clasificación de correos corporativos. **Estado:** especificación propuesta, no implementada.  
+**Sistema:** clasificación de correos corporativos.
 Inspirada en ISO/IEC/IEEE 29148 y en el Proyecto 15 (secciones 17.1–17.9).
+
+**Estado de contraste:** MVP local del commit `3f9a067`; aceptación integral pendiente. Los criterios académicos no se consideran satisfechos solo por estar implementados.
 
 ## 1. Descripción general
 
 El producto recibe mensajes de prueba por formulario, los valida y preprocesa, solicita una predicción a un servicio NLP y persiste el mensaje con su resultado. Operadores autorizados pueden buscarlo, cambiar su estado y corregir la categoría; administradores gestionan acceso y consultan auditoría.
 
-**Límites:** no integra buzones externos ni transmite correos. El entorno objetivo posterior es navegador moderno, API REST sobre HTTPS, servicio de IA interno y persistencia documental. Las dependencias son un modelo versionado, datos lícitos/documentados y una infraestructura de ejecución definida en fase posterior. MongoDB es decisión del equipo aún pendiente de justificación formal en `docs/07_decisiones_tecnicas.md`; no proviene del PDF, que sugiere PostgreSQL como alternativa sustituible.
+**Límites:** no integra buzones externos ni transmite correos. El MVP local usa navegador, API REST HTTP detrás de Nginx, servicio IA interno y MongoDB en cuatro servicios Compose. HTTPS es requisito fuera de local, no está configurado en esta demo. MongoDB es decisión justificada en [ADR-01](07_decisiones_tecnicas.md), no una obligación del PDF; PostgreSQL sigue siendo alternativa válida. Modelo, dataset y reproducción se detallan en [evaluación IA](09_evaluacion_final_ia.md).
 
 ### Roles y permisos
 
@@ -20,9 +22,9 @@ Los únicos roles obligatorios del MVP son **operador** y **administrador**. No 
 
 ### Creación de usuarios y credenciales
 
-Un administrador autenticado crea una cuenta de prueba con identificador único, rol (`OPERADOR` o `ADMINISTRADOR`) y estado activo. El sistema genera una **credencial temporal de un solo uso**, la muestra únicamente una vez al administrador dentro de su sesión HTTPS y no la registra en auditoría ni la devuelve en consultas posteriores. El administrador la comunica al titular mediante un canal aprobado fuera de la aplicación. Antes de iniciar sesión, el titular activa la cuenta con la credencial temporal y define su propia contraseña. La persistencia posterior conservará únicamente un hash de contraseña con sal y parámetros seguros; no se almacenarán ni registrarán contraseñas, credenciales temporales ni tokens en texto plano.
+Un administrador autenticado crea una cuenta con identificador único, rol (`OPERADOR` o `ADMINISTRADOR`) y habilitación configurable. La **credencial temporal de un solo uso** se entrega únicamente en esa respuesta autorizada (`Cache-Control: no-store`), sin auditoría del secreto ni consultas posteriores. El administrador la comunica por un canal aprobado fuera de la aplicación. El titular activa una cuenta habilitada antes de 24 horas y define una contraseña de 12–256 caracteres, no solo espacios. Se almacena hash Scrypt con sal; credenciales temporales y sesiones usan digest, nunca texto plano. La demo usa HTTP loopback; HTTPS sigue exigido fuera de local.
 
-Este flujo es un contrato de diseño: no implica que ya exista un canal de entrega ni una implementación de credenciales.
+El flujo está implementado en API/React. La renovación administrativa de una cuenta **pendiente** invalida la credencial anterior; una cuenta activada no admite restablecimiento por esa ruta. Creación/activación persistidas responden éxito aunque falle publicar la auditoría, conservando la intención para reintento. La CLI local de bootstrap crea cuentas ya activas como excepción operativa. No hay canal automático de entrega.
 
 ## 2. Requisitos funcionales
 
@@ -44,9 +46,11 @@ Este flujo es un contrato de diseño: no implica que ya exista un canal de entre
 
 ## 3. Requisitos no funcionales
 
+Se conservan los criterios académicos; su presencia no implica aceptación. El [plan](PLAN_Y_RESULTADOS_PRUEBAS.md) distingue evidencia previa, revisión documental y pendientes.
+
 | ID | Requisito verificable |
 |---|---|
-| **RNF-01 Seguridad** | Las interfaces propuestas usarán HTTPS en ambientes no locales y no incluirán secretos en respuestas ni registros de auditoría. |
+| **RNF-01 Seguridad** | HTTPS en ambientes no locales; no exponer secretos en consultas ni auditoría. Excepciones de entrega explícita: token de login y credencial temporal en respuesta administrativa de un solo uso, con `no-store`. |
 | **RNF-02 Autorización** | Toda operación protegida verificará sesión y rol; pruebas negativas deberán obtener 401 sin sesión y 403 sin permiso. |
 | **RNF-03 Rendimiento** | **Objetivo de diseño:** con dataset demo y carga definida en el plan de pruebas, p95 de consulta ≤2 s y clasificación síncrona ≤5 s; se medirá, no se afirma logrado. |
 | **RNF-04 Disponibilidad y fallos** | Un fallo de IA no perderá el mensaje: RF-07 deberá dejarlo consultable y pendiente de revisión. |
@@ -72,29 +76,44 @@ Este flujo es un contrato de diseño: no implica que ya exista un canal de entre
 | **RN-07** | Una corrección no elimina la predicción original; guarda motivo, actor, marca temporal, valor anterior y nuevo. Cuando no hubo predicción, la asignación manual registra explícitamente origen `MANUAL` y predicción ausente. |
 | **RN-08** | Los eventos de auditoría son de solo adición; no se editan ni eliminan desde el MVP. |
 
-## 5. Contratos REST propuestos (no implementados)
+## 5. Contratos REST implementados
 
 | Método y ruta | Permiso | Solicitud / respuesta | Errores |
 |---|---|---|---|
-| `POST /api/v1/auth/login` | Público | `{username,password}` → `{accessToken,user:{id,role}}` | 400, 401 |
-| `POST /api/v1/auth/activate` | Público con credencial temporal | `{username,temporaryCredential,newPassword}` → `204` | 400, 401, 409, 422 |
-| `POST /api/v1/messages` | Operador | `{subject,body,sender?}` → `{id,status,prediction?,department?}`; persiste primero `RECIBIDO` y responde el estado final del intento | 401, 422, 503 controlado |
+| `POST /api/v1/auth/login` | Público | `{username,password}` → `{accessToken,user:{id,role}}` | 401, 422 |
+| `POST /api/v1/auth/activate` | Público con credencial temporal | `{username,temporaryCredential,newPassword}` → `204` | 401, 422 |
+| `POST /api/v1/auth/logout` | Sesión vigente | revoca la sesión presentada → `204` | 401 |
+| `POST /api/v1/messages` | Sesión de operador/administrador | `{subject,body,sender?}` → `{id,status,prediction?,department?}`; persiste primero `RECIBIDO`; IA fallida responde 201 pendiente | 401, 422, 503 MongoDB |
 | `GET /api/v1/messages` | Operador | filtros → `{items,page,pageSize,total}` | 401, 422 |
-| `GET /api/v1/messages/{id}` | Operador | — → detalle de mensaje | 401, 404 |
-| `PATCH /api/v1/messages/{id}/status` | Operador | `{status,reason?}` → detalle | 401, 409, 422 |
-| `PATCH /api/v1/messages/{id}/classification` | Operador | `{department,reason}` → detalle; corrige predicción o asigna manualmente si no existe | 401, 409, 422 |
-| `GET /api/v1/audit-events` | Administrador | filtros → `{items}` | 401, 403 |
+| `GET /api/v1/messages/{message_id}` | Sesión de operador/administrador | — → detalle; historial autorizado mediante RF-12 | 401, 404, 422 |
+| `PATCH /api/v1/messages/{message_id}/status` | Sesión de operador/administrador | `{status,reason?}` → detalle; resolución obligatoria al cerrar | 401, 404, 409, 422 |
+| `PATCH /api/v1/messages/{message_id}/classification` | Sesión de operador/administrador | `{department,reason}` → detalle; admite `EN_GESTION`, conserva predicción | 401, 404, 409, 422 |
+| `GET /api/v1/audit-events` | Administrador | filtros → `{items}` | 401, 403, 422 |
 | `POST /api/v1/users` | Administrador | `{username,role,active}` → usuario y credencial temporal mostrada solo una vez | 401, 403, 409, 422 |
+| `GET /api/v1/users` | Administrador | `{page,pageSize}` → `{items,page,pageSize,total}` sin secretos | 401, 403, 422 |
+| `PATCH /api/v1/users/{username}` | Administrador | `{role,active}` → cuenta pública; invalida sesiones anteriores ante cambio | 401, 403, 404, 409, 422 |
+| `POST /api/v1/users/{username}/activation-credential` | Administrador | sin cuerpo → `{user,temporaryCredential,credentialExpiresAt}`; solo pendiente | 401, 403, 404, 409, 422 |
 
-Ejemplo de predicción integrada en la respuesta:
+Todas las rutas están implementadas. [OpenAPI generado](openapi.json) es la referencia de esquemas. MongoDB puede producir 503 en cualquier ruta dependiente; no todos esos errores están declarados en el OpenAPI automático. Mensajes filtra por `text,status,department,dateFrom,dateTo,page,pageSize`; auditoría por `messageId,actor,action,dateFrom,dateTo,limit`. Fechas ISO 8601 con zona, extremos inclusivos y rango invertido 422; `pageSize`/`limit` 1–100. El detalle no incorpora la auditoría global.
+
+Ejemplo **ilustrativo, no medición** de una respuesta de creación:
 
 ```json
 {
-  "department": "SOPORTE_TECNICO",
-  "confidence": 0.82,
-  "modelVersion": "pendiente-definir",
-  "source": "IA"
+  "id": "000000000000000000000001",
+  "status": "PENDIENTE_CLASIFICACION",
+  "prediction": null,
+  "department": null
 }
 ```
 
-El contrato interno propuesto de IA recibe `{text, preprocessingVersion}` y devuelve `{category, confidence, modelVersion}`. Su implementación, esquema definitivo y autenticación interna quedan fuera de esta fase.
+El contrato interno implementado recibe `{text,preprocessingVersion}` en `POST /predict` y devuelve `{category,confidence,modelVersion,preprocessingVersion,source,timestamp}`. IA usa `/health` para versión/checksum. No tiene autenticación propia: se mantiene en red interna sin puertos de host, con endurecimiento pendiente fuera de local.
+
+## 6. Diferencias y aceptación todavía no cerrada
+
+- **H-01 y RF-06/RN-03/RN-04:** se conserva arriba el criterio histórico 0,70. La ejecución compara contra `ROUTING_THRESHOLD`, valor Compose 0,45 provisional ([ADR-09](07_decisiones_tecnicas.md)). No se declara validado el 0,70 ni satisfecho literalmente ese valor por pruebas al 0,45. `REVISION_MANUAL` es nombre conceptual de la cola, no departamento persistido: se guarda `department=null` y `PENDIENTE_REVISION`.
+- **RF-04/HU-06:** la predicción válida conserva versión de preprocesamiento; si no hay predicción, no hay un campo independiente que la registre. Esa variante queda parcialmente aceptada.
+- **RF-10/RN-08:** auditoría de solo adición por API/código, no inmutabilidad frente a administradores de base de datos; permisos restrictivos pendientes.
+- **RNF-01/06/07/09:** TLS no local, revisión manual de accesibilidad/usabilidad y autorización de datos reales no se acreditan por pruebas HTTP. Hoy solo se usan datos ficticios.
+- **RNF-03/11:** hay evaluación y rendimiento básico previos, no carga productiva. Dataset, código y receta están en Git; binario se reconstruye o entrega aparte. Test separado, pero observado históricamente.
+- La aceptación formal RF/RNF/HU requiere prueba integral posterior; véanse [plan](PLAN_Y_RESULTADOS_PRUEBAS.md) y [matriz](04_matriz_trazabilidad.md). No se alteran criterios para declarar artificialmente su cumplimiento.

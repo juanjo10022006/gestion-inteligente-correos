@@ -1,0 +1,335 @@
+{
+  "datasetSha256": "3af898302b0c153a747979c380d3438e8ea1defef8cb29ec49f87a1db4ac0b06",
+  "preprocessingVersion": "1",
+  "trainingCodeSha256": "3b643b4a9fd9994cd75b8cb9ad11075941f14aa94e79032e7eefd3a1720d2850",
+  "preprocessingCodeSha256": "e8d9a7dad97df019c182c935c18206532cc468583130c6f1ce5acb3d70c1a7f1",
+  "python": "3.13.18",
+  "dependencies": {
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.5",
+    "scipy": "1.18.1",
+    "joblib": "1.6.0",
+    "threadpoolctl": "3.8.0",
+    "narwhals": "2.29.0"
+  },
+  "classes": [
+    "FACTURACION",
+    "RECURSOS_HUMANOS",
+    "SOPORTE_TECNICO",
+    "VENTAS"
+  ],
+  "vectorizer": {
+    "strip_accents": "unicode",
+    "ngram_range": [
+      1,
+      2
+    ]
+  },
+  "classifier": {
+    "max_iter": 1000,
+    "random_state": 42,
+    "C": 30.0
+  },
+  "modelVersion": "tfidf-logreg-4899d09a3071f491",
+  "artifactSha256": "b64848f287a8ccc9300a206edbc0aaed7e61df2a2b8d2096e6726fe7d265d652",
+  "thresholdProvisional": 0.45,
+  "evaluations": {
+    "validation": {
+      "baseline": {
+        "accuracy": 0.25,
+        "macroF1": 0.1,
+        "perClass": {
+          "FACTURACION": {
+            "precision": 0.25,
+            "recall": 1.0,
+            "f1-score": 0.4,
+            "support": 6.0
+          },
+          "RECURSOS_HUMANOS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          },
+          "SOPORTE_TECNICO": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          },
+          "VENTAS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          }
+        },
+        "confusionMatrix": [
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "classifier": {
+        "accuracy": 0.9583333333333334,
+        "macroF1": 0.958041958041958,
+        "perClass": {
+          "FACTURACION": {
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1-score": 0.9230769230769231,
+            "support": 6.0
+          },
+          "RECURSOS_HUMANOS": {
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.9090909090909091,
+            "support": 6.0
+          },
+          "SOPORTE_TECNICO": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 6.0
+          },
+          "VENTAS": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 6.0
+          }
+        },
+        "confusionMatrix": [
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            6,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            6
+          ]
+        ]
+      },
+      "routingSimulation": {
+        "threshold": 0.45,
+        "automaticCount": 20,
+        "reviewCount": 4,
+        "coverage": 0.8333333333333334,
+        "automaticAccuracy": 1.0
+      }
+    },
+    "test": {
+      "baseline": {
+        "accuracy": 0.25,
+        "macroF1": 0.1,
+        "perClass": {
+          "FACTURACION": {
+            "precision": 0.25,
+            "recall": 1.0,
+            "f1-score": 0.4,
+            "support": 6.0
+          },
+          "RECURSOS_HUMANOS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          },
+          "SOPORTE_TECNICO": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          },
+          "VENTAS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 6.0
+          }
+        },
+        "confusionMatrix": [
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "classifier": {
+        "accuracy": 0.9583333333333334,
+        "macroF1": 0.958041958041958,
+        "perClass": {
+          "FACTURACION": {
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1-score": 0.9230769230769231,
+            "support": 6.0
+          },
+          "RECURSOS_HUMANOS": {
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.9090909090909091,
+            "support": 6.0
+          },
+          "SOPORTE_TECNICO": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 6.0
+          },
+          "VENTAS": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 6.0
+          }
+        },
+        "confusionMatrix": [
+          [
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            6,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            6
+          ]
+        ]
+      },
+      "routingSimulation": {
+        "threshold": 0.45,
+        "automaticCount": 20,
+        "reviewCount": 4,
+        "coverage": 0.8333333333333334,
+        "automaticAccuracy": 1.0
+      }
+    }
+  },
+  "errors": {
+    "validation": [
+      {
+        "id": "SYN-078",
+        "expected": "RECURSOS_HUMANOS",
+        "predicted": "FACTURACION"
+      }
+    ],
+    "test": [
+      {
+        "id": "SYN-040",
+        "expected": "RECURSOS_HUMANOS",
+        "predicted": "FACTURACION"
+      }
+    ]
+  },
+  "validationThresholds": [
+    {
+      "threshold": 0.3,
+      "automaticCount": 24,
+      "reviewCount": 0,
+      "coverage": 1.0,
+      "automaticAccuracy": 0.9583333333333334
+    },
+    {
+      "threshold": 0.4,
+      "automaticCount": 21,
+      "reviewCount": 3,
+      "coverage": 0.875,
+      "automaticAccuracy": 1.0
+    },
+    {
+      "threshold": 0.45,
+      "automaticCount": 20,
+      "reviewCount": 4,
+      "coverage": 0.8333333333333334,
+      "automaticAccuracy": 1.0
+    },
+    {
+      "threshold": 0.55,
+      "automaticCount": 16,
+      "reviewCount": 8,
+      "coverage": 0.6666666666666666,
+      "automaticAccuracy": 1.0
+    },
+    {
+      "threshold": 0.7,
+      "automaticCount": 7,
+      "reviewCount": 17,
+      "coverage": 0.2916666666666667,
+      "automaticAccuracy": 1.0
+    }
+  ],
+  "limitations": "128 mensajes sintéticos; test ya evaluado anteriormente, sin nueva selección con test.",
+  "servedArtifactVerified": true
+}

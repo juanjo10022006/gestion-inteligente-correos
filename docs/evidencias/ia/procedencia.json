@@ -1,0 +1,22 @@
+{
+  "commitFuentes": "3f9a067dae0d5b3fdbf39f61b49d76328e7cd671",
+  "revisionDocumental": "2026-11-23",
+  "politicaHuellasDocumentales": "archivosSha256: JSON UTF-8 con LF (normalizar CRLF a LF al comprobar tras un checkout); PNG como bytes originales. No modifica el SHA-256 binario del modelo registrado en el manifiesto.",
+  "origenLocalIgnorado": "ai_service/artifacts/cierre-tecnico-lf",
+  "ejecucion": "bloque técnico anterior; sin reentrenamiento ni reejecución de notebooks en el cierre documental",
+  "health": "contraste previo registrado en servedArtifactVerified; no se consultó la base demo",
+  "notebooksSha256": {
+    "ai_service/notebooks/00_verificacion_entorno.ipynb": "09f303fcf9262ec0c53fe74d804ce918cd3c03d4d5e1b51c54cd9bf30db3205c",
+    "ai_service/notebooks/01_eda_dataset.ipynb": "c27954312783262e3291bc00d63f3012d33d74e482182ca62ef125b1aaac7952",
+    "ai_service/notebooks/02_entrenamiento_evaluacion.ipynb": "9acb97d0cc9716fe07780e0dd20473dcae97e6b5343cbc91faf018476517194b"
+  },
+  "notebookArtifactSha256": "597bfffb32018a4a50613f4a161f03df00ffcaa374eeb36e3166024b53b23e07",
+  "comparacion": "modelVersion y métricas equivalentes; no se afirma igualdad binaria con el notebook",
+  "archivosSha256": {
+    "evaluacion_artefacto.json": "8489f74cee6d0e034716663cc9945d4b7a51de5dc3026bbad2c28bd709dbe043",
+    "manifest.json": "28e04e2a934213ad74804462cc5f01fe1d6fef3635d70f064ff78ccfccf89c79",
+    "ejecucion_notebooks.json": "bb8f832568dc34b7fc8c5cb7fea7bbbe40d4fc5b40385b841fa7ac7410d65f26",
+    "eda_balance_longitud.png": "7e1b92351ede844e2a0278985ff6d4c66691ff5a14ed1644dd6fb172607dea0b",
+    "matriz_confusion_test.png": "f94887f338d7db525017976dd5f3eecd9eaf2b719702c36794c89ff342f421a2"
+  }
+}

@@ -2,6 +2,8 @@
 
 Este documento es el índice priorizado del trabajo funcional. Las fichas, justificaciones, excepciones y escenarios completos están en [05_epicas_y_hu.md](05_epicas_y_hu.md).
 
+**Estado de entrega:** implementación local consolidada en `3f9a067`, con pruebas técnicas previas; no es una declaración de aceptación integral. HU-01…05 y HU-07…13 tienen cobertura API/integración referida en la [matriz](04_matriz_trazabilidad.md); todas sus interacciones visuales requieren recorrido final. HU-06 conserva el parcial de versión de preparación cuando no hay predicción; HU-08 la diferencia H-01/umbral operativo; HU-14 sigue parcial por cobertura unitaria y aceptación integral pendientes. No se alteran prioridades, puntos, dependencias ni responsables para declarar cierre.
+
 | Épica | Propósito | Fichas |
 |---|---|---|
 | EPI-001 (EP-01) | Acceso y gestión de cuentas | HU-01, HU-02 |
