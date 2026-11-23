@@ -19,6 +19,7 @@ services:
       context: .
       target: api
     environment:
+      APP_ENV: "${APP_ENV:-local}"
       MONGODB_URI: mongodb://mongo:27017
       MONGODB_DB_NAME: "${MONGODB_DB_NAME:-gestion_correos}"
       AI_SERVICE_URL: http://ai:8001

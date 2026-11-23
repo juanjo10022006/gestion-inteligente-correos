@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, SecretStr
 from pymongo import ReturnDocument
 
 from backend.access_models import ActivationInput, Role
-from backend.audit import make_event, publish_collection_pending
+from backend.audit import make_event, publish_after_commit
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Acceso"])
 bearer = HTTPBearer(auto_error=False)
@@ -68,7 +68,7 @@ def login(credentials: LoginInput, request: Request, response: Response):
         )],
     }
     db.sessions.insert_one(session)
-    publish_collection_pending(db, "sessions", session["_id"])
+    publish_after_commit(db, "sessions", session["_id"], response)
     response.headers["Cache-Control"] = "no-store"
     return LoginResult(accessToken=token, user=UserIdentity(id=user["_id"], role=user["role"]))
 
@@ -108,7 +108,7 @@ def activate(payload: ActivationInput, request: Request):
     # Local import keeps the users router's administrator dependency acyclic.
     from backend.users import credential_hash, user_view
     db = request.app.state.db
-    publish_collection_pending(db, "users", payload.username)
+    publish_after_commit(db, "users", payload.username)
     now = datetime.now(timezone.utc)
     query = {
         "_id": payload.username, "activated": False, "active": True,
@@ -134,8 +134,9 @@ def activate(payload: ActivationInput, request: Request):
     )
     if document is None:
         raise unauthorized()
-    publish_collection_pending(db, "users", payload.username)
-    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+    response = Response(status_code=204, headers={"Cache-Control": "no-store"})
+    publish_after_commit(db, "users", payload.username, response)
+    return response
 
 
 @router.post("/logout", status_code=204)
@@ -158,5 +159,6 @@ def logout(
     )
     if not result.matched_count:
         raise unauthorized()
-    publish_collection_pending(db, "sessions", identifier)
-    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+    response = Response(status_code=204, headers={"Cache-Control": "no-store"})
+    publish_after_commit(db, "sessions", identifier, response)
+    return response

@@ -62,29 +62,33 @@ async def database_error(request: Request, error: PyMongoError):
 
 @app.post("/api/v1/messages", response_model=MessageCreated, status_code=201)
 def register_message(message: MessageInput, request: Request, user: Annotated[UserIdentity, Depends(current_user)]):
-    message_id = ObjectId()
+    return persist_message(message, request.app.state.db, user.id, request.app.state.routing_threshold, ObjectId())
+
+
+def persist_message(message, db, user_id, routing_threshold, message_id):
+    """Shared registration path; seed supplies a deterministic ID without changing the HTTP contract."""
     now = datetime.now(timezone.utc)
     document = message.model_dump()
     document.update(
         _id=message_id,
         status="RECIBIDO",
         createdAt=now,
-        createdBy=user.id,
+        createdBy=user_id,
         revision=0,
     )
     document["pendingAudit"] = [
-        make_event(message_id, "MENSAJE_REGISTRADO", user.id, None, snapshot(document)),
+        make_event(message_id, "MENSAJE_REGISTRADO", user_id, None, snapshot(document)),
     ]
-    messages = request.app.state.db.messages
+    messages = db.messages
     messages.insert_one(document)
-    publish_pending(request.app.state.db, message_id)
+    publish_pending(db, message_id)
 
     prediction = classify(message.subject, message.body)
     department = None
     if prediction is None:
         status = "PENDIENTE_CLASIFICACION"
         action = "CLASIFICACION_NO_DISPONIBLE"
-    elif prediction.confidence < request.app.state.routing_threshold:
+    elif prediction.confidence < routing_threshold:
         status = "PENDIENTE_REVISION"
         action = "CLASIFICACION_EN_REVISION"
     else:
@@ -113,7 +117,7 @@ def register_message(message: MessageInput, request: Request, user: Annotated[Us
         {**snapshot(document), "prediction": prediction.model_dump()} if prediction else snapshot(document),
         after,
     ))
-    update_with_events(request.app.state.db, document, updates, events)
+    update_with_events(db, document, updates, events)
     return MessageCreated(id=str(message_id), status=status, prediction=prediction, department=department)
 
 

@@ -1,11 +1,14 @@
 """Append-only event publication with a durable, per-message outbox."""
 
 from datetime import datetime, timezone
+import logging
 
 from bson import ObjectId
 from fastapi import HTTPException
 from pymongo import ReturnDocument
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, PyMongoError
+
+logger = logging.getLogger(__name__)
 
 LEGACY_FIELDS = (
     "creationEvent", "classificationEvent", "manualEvent", "managementEvent", "closureEvent",
@@ -62,6 +65,18 @@ def publish_pending(database, message_id=None):
     if message_id is None:
         for name in ("users", "sessions"):
             publish_collection_pending(database, name)
+
+
+def publish_after_commit(database, name, identifier, response=None):
+    """The durable intent exists: delivery failure must not hide a committed result."""
+    try:
+        publish_collection_pending(database, name, identifier)
+        return True
+    except PyMongoError:
+        logger.warning("Auditoría pendiente de publicación; se conserva la intención persistida.")
+        if response is not None:
+            response.headers["X-Audit-Status"] = "pending"
+        return False
 
 
 def update_with_events(database, before, updates, events):

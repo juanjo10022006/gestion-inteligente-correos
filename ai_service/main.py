@@ -2,21 +2,22 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import joblib
 from fastapi import FastAPI, HTTPException, Request
 
 from ai_service.contract import Prediction, PredictionRequest
 from ai_service.preprocessing import PREPROCESSING_VERSION
+from ai_service.artifact import load_verified
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     model_path = Path(os.environ["AI_MODEL_PATH"])
-    artifact = joblib.load(model_path)
+    artifact, manifest = load_verified(model_path)
     if artifact["metadata"]["preprocessingVersion"] != PREPROCESSING_VERSION:
         raise RuntimeError("El modelo usa una versión de preprocesamiento incompatible.")
     app.state.pipeline = artifact["pipeline"]
     app.state.model_version = artifact["metadata"]["modelVersion"]
+    app.state.artifact_sha256 = manifest["artifactSha256"]
     yield
 
 
@@ -25,7 +26,7 @@ app = FastAPI(title="Clasificador interno de correos", lifespan=lifespan)
 
 @app.get("/health")
 def health(request: Request):
-    return {"modelVersion": request.app.state.model_version}
+    return {"modelVersion": request.app.state.model_version, "artifactSha256": request.app.state.artifact_sha256}
 
 
 @app.post("/predict", response_model=Prediction)

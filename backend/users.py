@@ -8,7 +8,7 @@ from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from backend.access_models import UserCreate, UserCreated, UserPage, UserUpdate, UserView
-from backend.audit import make_event, publish_collection_pending
+from backend.audit import make_event, publish_after_commit
 from backend.auth import UserIdentity, administrator
 
 router = APIRouter(prefix="/api/v1/users", tags=["Usuarios"])
@@ -51,7 +51,7 @@ def create_user(
         db.users.insert_one(document)
     except DuplicateKeyError:
         raise HTTPException(409, "El identificador de usuario ya existe.") from None
-    publish_collection_pending(db, "users", payload.username)
+    publish_after_commit(db, "users", payload.username, response)
     response.headers["Cache-Control"] = "no-store"
     return UserCreated(user=UserView(**user_view(document)), temporaryCredential=temporary,
                        credentialExpiresAt=expires)
@@ -84,7 +84,7 @@ def update_user(
     user: Annotated[UserIdentity, Depends(administrator)],
 ):
     db = request.app.state.db
-    publish_collection_pending(db, "users", username)
+    publish_after_commit(db, "users", username)
     before = db.users.find_one({"_id": username})
     if before is None:
         raise HTTPException(404, "Usuario no encontrado.")
@@ -102,5 +102,36 @@ def update_user(
     )
     if document is None:
         raise HTTPException(409, "La cuenta cambió durante la operación. Actualiza e intenta de nuevo.")
-    publish_collection_pending(db, "users", username)
+    publish_after_commit(db, "users", username)
     return UserView(**user_view(document))
+
+
+@router.post("/{username}/activation-credential", response_model=UserCreated)
+def renew_activation(
+    username: Annotated[str, Path(min_length=1, max_length=64)],
+    request: Request, response: Response,
+    user: Annotated[UserIdentity, Depends(administrator)],
+):
+    db = request.app.state.db
+    before = db.users.find_one({"_id": username})
+    if before is None:
+        raise HTTPException(404, "Usuario no encontrado.")
+    if user_view(before)["activated"]:
+        raise HTTPException(409, "La cuenta ya está activada; no se restablece su contraseña.")
+    temporary = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + temporary_duration
+    updates = {"activationCredentialHash": credential_hash(temporary),
+               "activationExpiresAt": expires, "updatedAt": datetime.now(timezone.utc)}
+    event = make_event(None, "CREDENCIAL_RENOVADA", user.id, user_view(before), user_view(before))
+    document = db.users.find_one_and_update(
+        {"_id": username, "activated": False,
+         "revision": before.get("revision", {"$exists": False})},
+        {"$set": updates, "$inc": {"revision": 1, "authVersion": 1}, "$push": {"pendingAudit": event}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if document is None:
+        raise HTTPException(409, "La cuenta cambió durante la operación. Actualiza e intenta de nuevo.")
+    publish_after_commit(db, "users", username, response)
+    response.headers["Cache-Control"] = "no-store"
+    return UserCreated(user=UserView(**user_view(document)), temporaryCredential=temporary,
+                       credentialExpiresAt=expires)

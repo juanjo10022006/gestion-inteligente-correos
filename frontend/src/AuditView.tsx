@@ -23,6 +23,7 @@ const actions: Record<string, string> = {
   MENSAJE_CERRADO: 'Correo cerrado',
   PREDICCION_REGISTRADA: 'Predicción registrada',
   USUARIO_CREADO: 'Cuenta creada',
+  CREDENCIAL_RENOVADA: 'Credencial pendiente renovada',
   CUENTA_ACTIVADA: 'Cuenta activada',
   USUARIO_ACTUALIZADO: 'Cuenta actualizada',
   SESION_INICIADA: 'Inicio de sesión',

@@ -1,3 +1,4 @@
+param([string]$AiImage = "gestion-correos-ai-final:local")
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $suffix = [guid]::NewGuid().ToString("N").Substring(0, 12)
@@ -18,8 +19,8 @@ try {
     Assert-Exit "No se pudo crear la red temporal."
     docker run -d --rm --name $mongo --network $network --tmpfs /data/db --tmpfs /data/configdb mongo:8.0 | Out-Null
     Assert-Exit "No se pudo iniciar MongoDB efímero."
-    docker run -d --rm --name $ai --network $network gestion-inteligente-correos-ai | Out-Null
-    Assert-Exit "Se requiere la imagen IA local gestion-inteligente-correos-ai."
+    docker run -d --rm --name $ai --network $network $AiImage | Out-Null
+    Assert-Exit "Se requiere construir la imagen IA de verificación."
     $mongoReady = $false
     $aiReady = $false
     $ErrorActionPreference = "Continue"
@@ -37,7 +38,17 @@ try {
     }
     $ErrorActionPreference = "Stop"
     if (-not $mongoReady -or -not $aiReady) { throw "Los servicios temporales no quedaron disponibles." }
-    foreach ($test in @("init_db_verification.py", "compose_acceptance.py", "history_acceptance.py", "access_acceptance.py")) {
+    docker run --rm --network none --mount "type=bind,source=$PSScriptRoot,target=/checks,readonly" `
+        -e "PYTHONPATH=/app" $AiImage python /checks/artifact_verification.py
+    Assert-Exit "Falló la reproducción del artefacto."
+    docker exec $ai python -m ai_service.evaluate_artifact --include-test `
+        --service-url http://127.0.0.1:8001 --output /tmp/evaluation-served.json | Out-Null
+    Assert-Exit "El reporte no coincide con el artefacto servido."
+    New-Item -ItemType Directory -Force -Path (Join-Path $root "ai_service/artifacts") | Out-Null
+    docker cp "${ai}:/tmp/evaluation-served.json" (Join-Path $root "ai_service/artifacts/evaluation-served.json")
+    Assert-Exit "No se pudo conservar el reporte de prueba."
+    foreach ($test in @("init_db_verification.py", "compose_acceptance.py", "history_acceptance.py",
+                        "access_acceptance.py", "final_acceptance.py")) {
         docker run --rm --network $network `
             --mount "type=bind,source=$PSScriptRoot,target=/checks,readonly" `
             -e "PYTHONPATH=/app" `

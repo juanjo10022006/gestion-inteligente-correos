@@ -1,0 +1,13 @@
+# Only with a unique --project-name; never mounts or publishes the demo database.
+services:
+  web:
+    ports: !reset []
+  mongo:
+    ports: !reset []
+    volumes: !reset []
+    tmpfs:
+      - /data/db
+      - /data/configdb
+  api:
+    volumes:
+      - ./tests:/checks:ro

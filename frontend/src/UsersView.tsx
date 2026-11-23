@@ -7,7 +7,10 @@ type User = { id: string; username: string; role: Role; active: boolean; activat
 type UserPage = { items: User[]; total: number; pageSize: number };
 type Created = { user: User; temporaryCredential: string; credentialExpiresAt: string };
 
-function EditUser({ user, save }: { user: User; save: (user: User, role: Role, active: boolean) => Promise<void> }) {
+function EditUser({ user, save, renew }: {
+  user: User; save: (user: User, role: Role, active: boolean) => Promise<void>;
+  renew: (user: User) => Promise<void>;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -30,6 +33,13 @@ function EditUser({ user, save }: { user: User; save: (user: User, role: Role, a
     <label><input type="checkbox" name="active" defaultChecked={user.active} /> Cuenta habilitada</label>
     {error && <p className="notice" role="alert">{error}</p>}
     <button disabled={busy}>{busy ? 'Guardando…' : 'Guardar cuenta'}</button>
+    {!user.activated && <button type="button" disabled={busy} onClick={async () => {
+      if (!window.confirm('Se invalidará la credencial anterior. ¿Renovar la credencial pendiente?')) return;
+      setBusy(true); setError('');
+      try { await renew(user); }
+      catch (err) { setError(err instanceof Error ? err.message : 'No se pudo renovar.'); }
+      finally { setBusy(false); }
+    }}>Renovar credencial pendiente</button>}
   </form>;
 }
 
@@ -105,6 +115,16 @@ export function UsersView({ token, onLogout }: { token: string; onLogout: (notic
     {!list ? <p role="status">Cargando usuarios…</p> :
       <section className="users-grid" aria-label="Cuentas">
         {list.items.map(user => <EditUser key={user.id + user.role + user.active} user={user}
+          renew={async current => {
+            if (created) throw new Error('Oculta primero la credencial que acabas de recibir.');
+            try {
+              setCreated(await request<Created>('/users/' + encodeURIComponent(current.username) + '/activation-credential',
+                token, { method: 'POST' }));
+            } catch (err) {
+              if (err instanceof ApiError && err.status === 401) onLogout(err.message);
+              throw err;
+            }
+          }}
           save={async (current, role, active) => {
             try {
               await request<User>('/users/' + encodeURIComponent(current.username), token, {

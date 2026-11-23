@@ -116,6 +116,7 @@ def train(dataset, output_dir, evaluate_test):
         "datasetSha256": hashlib.sha256(raw_data).hexdigest(),
         "preprocessingVersion": PREPROCESSING_VERSION,
         "trainingCodeSha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "preprocessingCodeSha256": hashlib.sha256((ROOT / "preprocessing.py").read_bytes()).hexdigest(),
         "python": platform.python_version(),
         "dependencies": {
             name: version(name)
@@ -155,7 +156,8 @@ def train(dataset, output_dir, evaluate_test):
     for split, metrics in report["evaluations"].items():
         print(f"{split}: Macro-F1 base={metrics['baseline']['macroF1']:.3f}, "
               f"clasificador={metrics['classifier']['macroF1']:.3f}, "
-              f"cobertura a {THRESHOLD:.2f}={metrics['routingSimulation']['coverage']:.1%}")
+               f"cobertura a {THRESHOLD:.2f}={metrics['routingSimulation']['coverage']:.1%}")
+    return model_file, report_file
 
 
 def main():

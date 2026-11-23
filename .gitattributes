@@ -1,0 +1,4 @@
+ai_service/*.py text eol=lf
+ai_service/data/*.jsonl text eol=lf
+ai_service/notebooks/*.ipynb text eol=lf
+Dockerfile text eol=lf
