@@ -10,10 +10,21 @@ Las fuentes de esta carpeta son representaciones de diseño de la fase 1C; no so
 | [D-04](D-04_casos_uso.puml) | PlantUML | **Casos de uso UML.** Delimita el sistema; Administrador especializa a Operador y conserva casos exclusivos. Las asociaciones son líneas UML. | RF-01, RF-02, RF-03, RF-08–13; HU-01–05, HU-10–13 |
 | [D-05](D-05_secuencia_principal.puml) | PlantUML | **Secuencia UML.** Explicita validar → persistir `RECIBIDO` → auditar → preprocesar/inferir → guardar resultado y evento → responder 201. | RF-03–07; HU-03, HU-06–09 |
 | [D-06](D-06_estados.puml) | PlantUML | **Máquina de estados UML.** Representa los seis estados, asignaciones motivadas, corrección sin perder predicción y cierre Should. | RF-03, RF-06, RF-07, RF-10, RF-11, RF-13; HU-03, HU-08–12 |
-| [D-07](D-07_pipeline_ia.mmd) | Mermaid | **Pipeline IA.** Separa entrenamiento, validación y test para evitar fuga; las métricas son futuras y no resultados medidos. | RF-04, RF-05; HU-06, HU-07, HU-14 |
+| [D-07](D-07_pipeline_ia.mmd) | Mermaid | **Pipeline IA de diseño.** Separa entrenamiento, validación y test; las métricas de la ejecución real se documentan aparte, no se infieren del dibujo. | RF-04, RF-05; HU-06, HU-07, HU-14 |
 | [D-08](D-08_despliegue_propuesto.mmd) | Mermaid | **Despliegue previsto.** Distingue entrada HTTPS y red privada; MongoDB no expone puerto y los secretos quedan fuera de Git. | RNF-01, RNF-04, RNF-05, RNF-12; HU-09, HU-14 |
 | [D-09](D-09_datos_conceptual.mmd) | Mermaid | **Modelo conceptual MongoDB.** Separa predicción IA original de asignación efectiva y permite eventos automáticos `SISTEMA` sin actor humano obligatorio. | RF-02–07, RF-10–12; HU-02, HU-03, HU-06–13 |
 
 ## Validación de renderizado
 
 En esta revisión se detectaron Java, Node y `npx`, pero no PlantUML JAR/CLI ni Mermaid CLI instalados en el repositorio o disponibles como comandos locales. Por tanto, el renderizado de `.puml` y `.mmd` permanece **pendiente de validación con renderizadores compatibles**; no se instalaron dependencias. Sí se verificaron estructura, referencias, estados, contratos y orden crítico mediante análisis local; el detalle está en [el informe de revisión](../INFORME_REVISION_DIAGRAMAS.md).
+
+## Lectura respecto del MVP consolidado
+
+La observación de herramientas anterior corresponde a la revisión histórica, no a una nueva instalación de renderizadores en el cierre documental. Se conservan los nueve archivos originales.
+
+- D-08 muestra la propuesta endurecida HTTPS/MongoDB sin puerto host; Compose local usa HTTP y MongoDB en loopback 27018. No se presenta como un diagrama exacto de esa ejecución.
+- Las referencias a H-01=0,70 son del diseño original; la demo usa 0,45 provisional. C4/UML no prueban la validación de un umbral.
+- Las entidades conceptuales D-09 tienen correspondencia física y límites en [modelo de datos](../08_modelo_datos_preliminar.md); las colecciones no se suponen pobladas solo por dibujarlas.
+- Existen fuentes PlantUML/Mermaid y prototipos SVG, **no fuentes TikZ**. La interpretación obligatoria de «TikZ/UML/C4» debe confirmarse con el profesor; no se hicieron conversiones cosméticas.
+
+Documentos de ejecución y entrega: [arc42](../06_arquitectura_diagramas.md), [manual técnico](../MANUAL_TECNICO.md), [manual de usuario](../MANUAL_USUARIO.md), [informe final](../INFORME_FINAL_PROYECTO.md), [plan de pruebas](../PLAN_Y_RESULTADOS_PRUEBAS.md) y [evaluación IA](../09_evaluacion_final_ia.md).
